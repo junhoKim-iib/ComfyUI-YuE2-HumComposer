@@ -1,0 +1,25 @@
+"""Python-only ComfyUI V1 registration; no model or runtime dependencies."""
+from .nodes.analyze import HumMelodyAnalyze, KeyModeCandidates
+from .nodes.harmony import ChordProgressionRecommend
+from .nodes.anchors import CreateMelodyAnchor, AppendMelodyAnchor
+from .nodes.compose import HumSongComposer
+from .nodes.validation import ABCValidate
+
+NODE_CLASS_MAPPINGS = {
+    'YuE2HumMelodyAnalyze': HumMelodyAnalyze,
+    'YuE2KeyModeCandidates': KeyModeCandidates,
+    'YuE2ChordProgressionRecommend': ChordProgressionRecommend,
+    'YuE2MelodyAnchor': CreateMelodyAnchor,
+    'YuE2AppendMelodyAnchor': AppendMelodyAnchor,
+    'YuE2HumSongComposer': HumSongComposer,
+    'YuE2ABCValidate': ABCValidate,
+}
+NODE_DISPLAY_NAME_MAPPINGS = {
+    'YuE2HumMelodyAnalyze': 'YuE2 Hum Melody Analyze',
+    'YuE2KeyModeCandidates': 'YuE2 Key & Mode Candidates',
+    'YuE2ChordProgressionRecommend': 'YuE2 Chord Progression Recommend',
+    'YuE2MelodyAnchor': 'YuE2 Melody Anchor',
+    'YuE2AppendMelodyAnchor': 'YuE2 Append Melody Anchor',
+    'YuE2HumSongComposer': 'YuE2 Hum Song Composer',
+    'YuE2ABCValidate': 'YuE2 ABC Validate',
+}
