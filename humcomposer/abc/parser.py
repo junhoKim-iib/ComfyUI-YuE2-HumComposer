@@ -38,7 +38,7 @@ _SECTIONS = frozenset({
     "verse and pre-chorus", "solo", "theme", "development", "variation", "pre-outro", "custom",
 })
 _NOTE = re.compile(r"(?P<acc>\^{1,2}|_{1,2}|=)?(?P<letter>[A-Ga-gz])(?P<oct>[,']*)")
-_LENGTH = re.compile(r"(?:\d+(?:/\d*|/{2,})?|/+\d*)")
+_LENGTH = re.compile(r"(?:\d+(?:/{2,}|/\d*)?|/+\d*)")
 _FIELD = re.compile(r"^([A-Za-z]):\s*(.*)$")
 MAX_MEASURES = 16384
 MAX_EVENTS = 100000
@@ -66,12 +66,21 @@ def parse_key(value: str, offset: int = 0) -> KeySignature:
 def parse_meter(value: str, offset: int = 0) -> Meter:
     value = {"C": "4/4", "C|": "2/2"}.get(value.strip(), value.strip())
     match = re.fullmatch(r"(\d+)/(\d+)", value)
-    if not match or int(match[1]) <= 0 or int(match[2]) <= 0:
+    if not match:
         raise ABCParseError("unsupported_meter", f"Expected a positive meter, got {value!r}", offset)
-    denominator = int(match[2])
+    numerator,denominator = _integer(match[1],offset),_integer(match[2],offset)
+    if numerator<=0 or denominator<=0:
+        raise ABCParseError('unsupported_meter','Meter values must be positive',offset)
     if denominator & (denominator - 1):
         raise ABCParseError("unsupported_meter", "Meter denominator must be a power of two", offset)
-    return Meter(int(match[1]), denominator)
+    return Meter(numerator, denominator)
+
+
+def _integer(value: str, offset: int) -> int:
+    try:
+        return int(value)
+    except ValueError as exc:
+        raise ABCParseError('invalid_integer','Integer syntax or size exceeds supported conversion',offset) from exc
 
 
 def _fraction(value: str, offset: int) -> Fraction:
@@ -121,8 +130,10 @@ class _VoiceState:
     measure_meter: Meter | None = None
     accidentals: dict[str, int] = field(default_factory=dict)
     pending_tie: Note | None = None
+    pending_tie_natural: int | None = None
     section_id: str = ""
     rest_count: int = 1
+    full_rest: bool = False
 
 
 @dataclass
@@ -207,6 +218,7 @@ class _Parser:
         state.measure_meter = None
         state.accidentals = {}
         state.rest_count = 1
+        state.full_rest = False
 
     def section_marker(self, text: str, offset: int) -> None:
         label = normalize_section_name(text)
@@ -217,7 +229,7 @@ class _Parser:
                 raise ABCParseError("invalid_section", "Explicit section label is empty", offset)
         if label not in _SECTIONS and not explicit:
             return
-        if any(voice.events for voice in self.voices.values()):
+        if any(voice.start is not None for voice in self.voices.values()):
             raise ABCParseError("section_inside_measure", "Section boundaries must be between complete bars", offset)
         occurrence = 1 + sum(section.name == label for section in self.sections)
         self.sections.append(_SectionState(label, occurrence, offset))
@@ -261,6 +273,10 @@ class _Parser:
             match = re.match(r"([A-Za-z0-9_-]+)(?:\s+.*)?$", value.strip())
             if not match:
                 raise ABCParseError("invalid_voice", f"Invalid voice declaration {value!r}", span.start)
+            if self.in_body and self.selected in self.voices:
+                state = self.voices[self.selected]
+                if state.start is not None and match[1]!=self.selected:
+                    raise ABCParseError('voice_inside_measure','Switch voices only at bar boundaries',span.start)
             self.selected = match[1]
             # Header declarations select no musical stream; initial K closes the header.
             if self.in_body:
@@ -321,7 +337,7 @@ class _Parser:
             if char == "Z":
                 match = re.match(r"Z(\d*)", line[index:])
                 assert match is not None
-                count = int(match[1] or "1")
+                count = _integer(match[1] or "1",position)
                 if count < 1:
                     raise ABCParseError("invalid_rest", "Full-bar rest count must be positive", position)
                 if count>MAX_MEASURES:
@@ -330,12 +346,13 @@ class _Parser:
                     raise ABCParseError("invalid_multirest", "Z<n> must occupy otherwise empty complete bars", position)
                 duration = state.meter.duration * count
                 state.rest_count = count
+                state.full_rest = True
                 state.elapsed = duration
                 state.events.append(Rest(state.onset, duration, SourceSpan(position, position + len(match[0]))))
                 index += len(match[0])
                 state.last_end = offset + index
                 continue
-            if state.rest_count > 1 or any(isinstance(event, Rest) and event.span.text(self.source).startswith("Z") for event in state.events):
+            if state.full_rest:
                 raise ABCParseError("invalid_multirest", "No music may follow Z<n> before its bar line", position)
             match = _NOTE.match(line, index)
             if not match:
@@ -366,7 +383,7 @@ class _Parser:
                 midi = natural + state.accidentals.get(letter, state.key.accidentals.get(letter, 0))
                 previous = state.pending_tie
                 if previous is not None:
-                    if accidental is None and letter == previous.letter and abs(midi - previous.midi) <= 2:
+                    if accidental is None and natural == state.pending_tie_natural:
                         midi = previous.midi
                     if midi != previous.midi:
                         raise ABCParseError("broken_tie", "A tied continuation must preserve the sounding pitch", position)
@@ -374,6 +391,7 @@ class _Parser:
                     raise ABCParseError("pitch_out_of_range", f"Pitch {midi} is outside MIDI 0..127", position)
                 event = Note(midi, letter, accidental, onset, duration, previous is not None, tied, span)
                 state.pending_tie = event if tied else None
+                state.pending_tie_natural = natural if tied else None
             state.events.append(event)
             state.elapsed += duration
             index = end
