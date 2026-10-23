@@ -1,0 +1,1228 @@
+{
+  "last_node_id": 21,
+  "last_link_id": 27,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadAudio",
+      "pos": [
+        40,
+        100
+      ],
+      "size": [
+        460,
+        180
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": [
+            2
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadAudio"
+      },
+      "widgets_values": [
+        ""
+      ],
+      "title": "Upload or select humming audio"
+    },
+    {
+      "id": 2,
+      "type": "AudioEncoderLoader",
+      "pos": [
+        40,
+        350
+      ],
+      "size": [
+        460,
+        130
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "AUDIO_ENCODER",
+          "type": "AUDIO_ENCODER",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "AudioEncoderLoader"
+      },
+      "widgets_values": [
+        "sheetsage2_bf16.safetensors"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "SheetSage2AudioToABC",
+      "pos": [
+        40,
+        550
+      ],
+      "size": [
+        460,
+        170
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "audio_encoder",
+          "type": "AUDIO_ENCODER",
+          "link": 1
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "abc",
+          "type": "STRING",
+          "links": [
+            3
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SheetSage2AudioToABC"
+      },
+      "widgets_values": [
+        "melody"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "YuE2HumMelodyAnalyze",
+      "pos": [
+        40,
+        790
+      ],
+      "size": [
+        460,
+        170
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "abc",
+          "type": "STRING",
+          "link": 3,
+          "widget": {
+            "name": "abc"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "analysis",
+          "type": "YUE2_HUM_ANALYSIS",
+          "links": []
+        },
+        {
+          "name": "summary",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "normalized_abc",
+          "type": "STRING",
+          "links": [
+            4
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "YuE2HumMelodyAnalyze"
+      },
+      "widgets_values": [
+        "",
+        "auto"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "YuE2MelodyAnchor",
+      "pos": [
+        580,
+        100
+      ],
+      "size": [
+        460,
+        750
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "abc",
+          "type": "STRING",
+          "link": 4,
+          "widget": {
+            "name": "abc"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "anchor",
+          "type": "YUE2_MELODY_ANCHOR",
+          "links": [
+            5
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "YuE2MelodyAnchor"
+      },
+      "widgets_values": [
+        "",
+        "verse",
+        "1",
+        "LOCK",
+        1.0,
+        "pad_rest",
+        "none",
+        "keep_base",
+        "auto",
+        "Vocal",
+        0.25,
+        0,
+        ""
+      ]
+    },
+    {
+      "id": 6,
+      "type": "YuE2AppendMelodyAnchor",
+      "pos": [
+        580,
+        920
+      ],
+      "size": [
+        460,
+        130
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "anchor",
+          "type": "YUE2_MELODY_ANCHOR",
+          "link": 5
+        },
+        {
+          "name": "previous",
+          "type": "YUE2_ANCHORS",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "anchors",
+          "type": "YUE2_ANCHORS",
+          "links": [
+            10
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "YuE2AppendMelodyAnchor"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 7,
+      "type": "CheckpointLoaderSimple",
+      "pos": [
+        1120,
+        100
+      ],
+      "size": [
+        460,
+        130
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            18
+          ]
+        },
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            6,
+            12
+          ]
+        },
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            23
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CheckpointLoaderSimple"
+      },
+      "widgets_values": [
+        "yue2_3b_int8_convrot.safetensors"
+      ]
+    },
+    {
+      "id": 20,
+      "type": "PrimitiveStringMultiline",
+      "pos": [
+        1120,
+        300
+      ],
+      "size": [
+        460,
+        230
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [
+            7,
+            13
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PrimitiveStringMultiline"
+      },
+      "widgets_values": [
+        "Simple piano pop, 4/4, 96 BPM, C major, short melodic phrases."
+      ],
+      "title": "Style (shared by ABC and Music)"
+    },
+    {
+      "id": 21,
+      "type": "PrimitiveStringMultiline",
+      "pos": [
+        1120,
+        600
+      ],
+      "size": [
+        460,
+        230
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [
+            8,
+            14
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PrimitiveStringMultiline"
+      },
+      "widgets_values": [
+        "[chorus]\nA little tune begins today\nWe let its gentle colors play\n[verse]\nA quiet step along the way\nWe bring the melody to stay"
+      ],
+      "title": "Lyrics (shared by ABC and Music)"
+    },
+    {
+      "id": 8,
+      "type": "YuE2GenerateABC",
+      "pos": [
+        1120,
+        900
+      ],
+      "size": [
+        460,
+        510
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 6
+        },
+        {
+          "name": "style",
+          "type": "STRING",
+          "link": 7,
+          "widget": {
+            "name": "style"
+          }
+        },
+        {
+          "name": "lyrics",
+          "type": "STRING",
+          "link": 8,
+          "widget": {
+            "name": "lyrics"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "abc",
+          "type": "STRING",
+          "links": [
+            9,
+            25
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "YuE2GenerateABC"
+      },
+      "widgets_values": [
+        "",
+        "",
+        0,
+        "fixed",
+        "full",
+        2048,
+        0.7,
+        0.9,
+        30,
+        1.005,
+        100
+      ]
+    },
+    {
+      "id": 9,
+      "type": "YuE2HumSongComposer",
+      "pos": [
+        1660,
+        100
+      ],
+      "size": [
+        460,
+        250
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "base_abc",
+          "type": "STRING",
+          "link": 9,
+          "widget": {
+            "name": "base_abc"
+          }
+        },
+        {
+          "name": "anchors",
+          "type": "YUE2_ANCHORS",
+          "link": 10
+        }
+      ],
+      "outputs": [
+        {
+          "name": "final_abc",
+          "type": "STRING",
+          "links": [
+            11,
+            15,
+            27
+          ]
+        },
+        {
+          "name": "composition_report",
+          "type": "STRING",
+          "links": [
+            26
+          ]
+        },
+        {
+          "name": "validation_report",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "YuE2HumSongComposer"
+      },
+      "widgets_values": [
+        "",
+        "",
+        "none",
+        "strict"
+      ]
+    },
+    {
+      "id": 10,
+      "type": "YuE2ABCValidate",
+      "pos": [
+        1660,
+        420
+      ],
+      "size": [
+        460,
+        180
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "abc",
+          "type": "STRING",
+          "link": 11,
+          "widget": {
+            "name": "abc"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "valid",
+          "type": "BOOLEAN",
+          "links": []
+        },
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "YuE2ABCValidate"
+      },
+      "widgets_values": [
+        "",
+        true
+      ]
+    },
+    {
+      "id": 11,
+      "type": "YuE2GenerateMusic",
+      "pos": [
+        2200,
+        100
+      ],
+      "size": [
+        460,
+        540
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 12
+        },
+        {
+          "name": "style",
+          "type": "STRING",
+          "link": 13,
+          "widget": {
+            "name": "style"
+          }
+        },
+        {
+          "name": "lyrics",
+          "type": "STRING",
+          "link": 14,
+          "widget": {
+            "name": "lyrics"
+          }
+        },
+        {
+          "name": "abc",
+          "type": "STRING",
+          "link": 15,
+          "widget": {
+            "name": "abc"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            17,
+            19
+          ]
+        },
+        {
+          "name": "seconds",
+          "type": "FLOAT",
+          "links": [
+            16
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "YuE2GenerateMusic"
+      },
+      "widgets_values": [
+        "",
+        "",
+        "",
+        0,
+        "fixed",
+        "full",
+        24.0,
+        1.0,
+        0.95,
+        100,
+        1.2,
+        1.0
+      ]
+    },
+    {
+      "id": 12,
+      "type": "EmptyYuE2LatentAudio",
+      "pos": [
+        2200,
+        710
+      ],
+      "size": [
+        460,
+        150
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "seconds",
+          "type": "FLOAT",
+          "link": 16,
+          "widget": {
+            "name": "seconds"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            21
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "EmptyYuE2LatentAudio"
+      },
+      "widgets_values": [
+        120.0,
+        1
+      ]
+    },
+    {
+      "id": 13,
+      "type": "ConditioningZeroOut",
+      "pos": [
+        2200,
+        930
+      ],
+      "size": [
+        460,
+        110
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 17
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            20
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ConditioningZeroOut"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 14,
+      "type": "KSampler",
+      "pos": [
+        2740,
+        100
+      ],
+      "size": [
+        460,
+        370
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 18
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 19
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 20
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 21
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            22
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "KSampler"
+      },
+      "widgets_values": [
+        0,
+        "fixed",
+        8,
+        1.0,
+        "euler",
+        "simple",
+        1.0
+      ]
+    },
+    {
+      "id": 15,
+      "type": "VAEDecodeAudio",
+      "pos": [
+        2740,
+        540
+      ],
+      "size": [
+        460,
+        130
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 22
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 23
+        }
+      ],
+      "outputs": [
+        {
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": [
+            24
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecodeAudio"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 16,
+      "type": "PreviewAudio",
+      "pos": [
+        2740,
+        740
+      ],
+      "size": [
+        460,
+        220
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 24
+        }
+      ],
+      "outputs": [
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAudio"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 17,
+      "type": "PreviewAny",
+      "pos": [
+        1120,
+        1480
+      ],
+      "size": [
+        460,
+        280
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 25
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny"
+      },
+      "widgets_values": [],
+      "title": "Base ABC: check verse#1 and length"
+    },
+    {
+      "id": 18,
+      "type": "PreviewAny",
+      "pos": [
+        1660,
+        670
+      ],
+      "size": [
+        460,
+        280
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 26
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny"
+      },
+      "widgets_values": [],
+      "title": "Composition report"
+    },
+    {
+      "id": 19,
+      "type": "PreviewAny",
+      "pos": [
+        1660,
+        1020
+      ],
+      "size": [
+        460,
+        280
+      ],
+      "flags": {},
+      "order": 20,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 27
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny"
+      },
+      "widgets_values": [],
+      "title": "Final ABC"
+    }
+  ],
+  "links": [
+    [
+      1,
+      2,
+      0,
+      3,
+      0,
+      "AUDIO_ENCODER"
+    ],
+    [
+      2,
+      1,
+      0,
+      3,
+      1,
+      "AUDIO"
+    ],
+    [
+      3,
+      3,
+      0,
+      4,
+      0,
+      "STRING"
+    ],
+    [
+      4,
+      4,
+      2,
+      5,
+      0,
+      "STRING"
+    ],
+    [
+      5,
+      5,
+      0,
+      6,
+      0,
+      "YUE2_MELODY_ANCHOR"
+    ],
+    [
+      6,
+      7,
+      1,
+      8,
+      0,
+      "CLIP"
+    ],
+    [
+      7,
+      20,
+      0,
+      8,
+      1,
+      "STRING"
+    ],
+    [
+      8,
+      21,
+      0,
+      8,
+      2,
+      "STRING"
+    ],
+    [
+      9,
+      8,
+      0,
+      9,
+      0,
+      "STRING"
+    ],
+    [
+      10,
+      6,
+      0,
+      9,
+      1,
+      "YUE2_ANCHORS"
+    ],
+    [
+      11,
+      9,
+      0,
+      10,
+      0,
+      "STRING"
+    ],
+    [
+      12,
+      7,
+      1,
+      11,
+      0,
+      "CLIP"
+    ],
+    [
+      13,
+      20,
+      0,
+      11,
+      1,
+      "STRING"
+    ],
+    [
+      14,
+      21,
+      0,
+      11,
+      2,
+      "STRING"
+    ],
+    [
+      15,
+      9,
+      0,
+      11,
+      3,
+      "STRING"
+    ],
+    [
+      16,
+      11,
+      1,
+      12,
+      0,
+      "FLOAT"
+    ],
+    [
+      17,
+      11,
+      0,
+      13,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      18,
+      7,
+      0,
+      14,
+      0,
+      "MODEL"
+    ],
+    [
+      19,
+      11,
+      0,
+      14,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      20,
+      13,
+      0,
+      14,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      21,
+      12,
+      0,
+      14,
+      3,
+      "LATENT"
+    ],
+    [
+      22,
+      14,
+      0,
+      15,
+      0,
+      "LATENT"
+    ],
+    [
+      23,
+      7,
+      2,
+      15,
+      1,
+      "VAE"
+    ],
+    [
+      24,
+      15,
+      0,
+      16,
+      0,
+      "AUDIO"
+    ],
+    [
+      25,
+      8,
+      0,
+      17,
+      0,
+      "STRING"
+    ],
+    [
+      26,
+      9,
+      1,
+      18,
+      0,
+      "STRING"
+    ],
+    [
+      27,
+      9,
+      0,
+      19,
+      0,
+      "STRING"
+    ]
+  ],
+  "groups": [
+    {
+      "title": "Audio and transcription",
+      "bounding": [
+        20,
+        40,
+        500,
+        980
+      ],
+      "color": "#3f6377",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "Melody anchor",
+      "bounding": [
+        560,
+        40,
+        500,
+        1070
+      ],
+      "color": "#3f6377",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "Style, lyrics and base plan",
+      "bounding": [
+        1100,
+        40,
+        500,
+        1780
+      ],
+      "color": "#3f6377",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "Compose and validate",
+      "bounding": [
+        1640,
+        40,
+        500,
+        1320
+      ],
+      "color": "#3f6377",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "Music conditioning",
+      "bounding": [
+        2180,
+        40,
+        500,
+        1060
+      ],
+      "color": "#3f6377",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "Sampling and audio preview",
+      "bounding": [
+        2720,
+        40,
+        500,
+        980
+      ],
+      "color": "#3f6377",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.5,
+      "offset": [
+        20,
+        20
+      ]
+    }
+  },
+  "version": 0.4
+}
