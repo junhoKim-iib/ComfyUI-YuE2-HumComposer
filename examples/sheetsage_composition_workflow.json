@@ -1,13 +1,13 @@
 {
-  "last_node_id": 21,
-  "last_link_id": 27,
+  "last_node_id": 43,
+  "last_link_id": 53,
   "nodes": [
     {
       "id": 1,
       "type": "LoadAudio",
       "pos": [
-        40,
-        100
+        1100,
+        120
       ],
       "size": [
         460,
@@ -32,14 +32,14 @@
       "widgets_values": [
         ""
       ],
-      "title": "Upload or select humming audio"
+      "title": "Chorus 허밍 업로드"
     },
     {
       "id": 2,
       "type": "AudioEncoderLoader",
       "pos": [
-        40,
-        350
+        60,
+        320
       ],
       "size": [
         460,
@@ -54,7 +54,9 @@
           "name": "AUDIO_ENCODER",
           "type": "AUDIO_ENCODER",
           "links": [
-            1
+            1,
+            4,
+            7
           ]
         }
       ],
@@ -69,8 +71,8 @@
       "id": 3,
       "type": "SheetSage2AudioToABC",
       "pos": [
-        40,
-        550
+        1100,
+        370
       ],
       "size": [
         460,
@@ -111,8 +113,8 @@
       "id": 4,
       "type": "YuE2HumMelodyAnalyze",
       "pos": [
-        40,
-        790
+        1100,
+        610
       ],
       "size": [
         460,
@@ -135,18 +137,23 @@
         {
           "name": "analysis",
           "type": "YUE2_HUM_ANALYSIS",
-          "links": []
+          "links": [
+            10,
+            11
+          ]
         },
         {
           "name": "summary",
           "type": "STRING",
-          "links": []
+          "links": [
+            51
+          ]
         },
         {
           "name": "normalized_abc",
           "type": "STRING",
           "links": [
-            4
+            17
           ]
         }
       ],
@@ -156,27 +163,452 @@
       "widgets_values": [
         "",
         "auto"
+      ],
+      "title": "Chorus 멜로디 분석"
+    },
+    {
+      "id": 27,
+      "type": "LoadAudio",
+      "pos": [
+        580,
+        120
+      ],
+      "size": [
+        460,
+        180
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": [
+            5
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadAudio"
+      },
+      "widgets_values": [
+        ""
+      ],
+      "title": "Intro 허밍 업로드"
+    },
+    {
+      "id": 28,
+      "type": "SheetSage2AudioToABC",
+      "pos": [
+        580,
+        370
+      ],
+      "size": [
+        460,
+        170
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "audio_encoder",
+          "type": "AUDIO_ENCODER",
+          "link": 4
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 5
+        }
+      ],
+      "outputs": [
+        {
+          "name": "abc",
+          "type": "STRING",
+          "links": [
+            6
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SheetSage2AudioToABC"
+      },
+      "widgets_values": [
+        "melody"
       ]
     },
     {
-      "id": 5,
-      "type": "YuE2MelodyAnchor",
+      "id": 29,
+      "type": "YuE2HumMelodyAnalyze",
       "pos": [
         580,
-        100
+        610
+      ],
+      "size": [
+        460,
+        170
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "abc",
+          "type": "STRING",
+          "link": 6,
+          "widget": {
+            "name": "abc"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "analysis",
+          "type": "YUE2_HUM_ANALYSIS",
+          "links": []
+        },
+        {
+          "name": "summary",
+          "type": "STRING",
+          "links": [
+            52
+          ]
+        },
+        {
+          "name": "normalized_abc",
+          "type": "STRING",
+          "links": [
+            15
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "YuE2HumMelodyAnalyze"
+      },
+      "widgets_values": [
+        "",
+        "auto"
+      ],
+      "title": "Intro 멜로디 분석"
+    },
+    {
+      "id": 32,
+      "type": "LoadAudio",
+      "pos": [
+        1620,
+        120
+      ],
+      "size": [
+        460,
+        180
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": [
+            8
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadAudio"
+      },
+      "widgets_values": [
+        ""
+      ],
+      "title": "Bridge 허밍 업로드"
+    },
+    {
+      "id": 33,
+      "type": "SheetSage2AudioToABC",
+      "pos": [
+        1620,
+        370
+      ],
+      "size": [
+        460,
+        170
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "audio_encoder",
+          "type": "AUDIO_ENCODER",
+          "link": 7
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 8
+        }
+      ],
+      "outputs": [
+        {
+          "name": "abc",
+          "type": "STRING",
+          "links": [
+            9
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SheetSage2AudioToABC"
+      },
+      "widgets_values": [
+        "melody"
+      ]
+    },
+    {
+      "id": 34,
+      "type": "YuE2HumMelodyAnalyze",
+      "pos": [
+        1620,
+        610
+      ],
+      "size": [
+        460,
+        170
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "abc",
+          "type": "STRING",
+          "link": 9,
+          "widget": {
+            "name": "abc"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "analysis",
+          "type": "YUE2_HUM_ANALYSIS",
+          "links": []
+        },
+        {
+          "name": "summary",
+          "type": "STRING",
+          "links": [
+            53
+          ]
+        },
+        {
+          "name": "normalized_abc",
+          "type": "STRING",
+          "links": [
+            22
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "YuE2HumMelodyAnalyze"
+      },
+      "widgets_values": [
+        "",
+        "auto"
+      ],
+      "title": "Bridge 멜로디 분석"
+    },
+    {
+      "id": 22,
+      "type": "YuE2KeyModeCandidates",
+      "pos": [
+        580,
+        1560
+      ],
+      "size": [
+        460,
+        180
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "analysis",
+          "type": "YUE2_HUM_ANALYSIS",
+          "link": 10
+        }
+      ],
+      "outputs": [
+        {
+          "name": "candidates",
+          "type": "YUE2_KEY_CANDIDATES",
+          "links": [
+            12
+          ]
+        },
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": [
+            13
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "YuE2KeyModeCandidates"
+      },
+      "widgets_values": [
+        false,
+        5
+      ],
+      "title": "조·모드 후보 비교"
+    },
+    {
+      "id": 23,
+      "type": "YuE2ChordProgressionRecommend",
+      "pos": [
+        580,
+        1810
+      ],
+      "size": [
+        460,
+        320
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "analysis",
+          "type": "YUE2_HUM_ANALYSIS",
+          "link": 11
+        },
+        {
+          "name": "candidates",
+          "type": "YUE2_KEY_CANDIDATES",
+          "link": 12
+        }
+      ],
+      "outputs": [
+        {
+          "name": "recommendations",
+          "type": "YUE2_CHORD_RECOMMENDATIONS",
+          "links": []
+        },
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": [
+            14,
+            28
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "YuE2ChordProgressionRecommend"
+      },
+      "widgets_values": [
+        "auto",
+        "auto",
+        8,
+        "triads",
+        3,
+        1
+      ],
+      "title": "candidate_index로 조 후보 선택 → 코드 추천"
+    },
+    {
+      "id": 24,
+      "type": "PreviewAny",
+      "pos": [
+        1100,
+        1560
+      ],
+      "size": [
+        460,
+        280
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 13
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny"
+      },
+      "widgets_values": [],
+      "title": "조·모드 후보 보고서"
+    },
+    {
+      "id": 25,
+      "type": "PreviewAny",
+      "pos": [
+        1100,
+        1910
+      ],
+      "size": [
+        460,
+        280
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 14
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny"
+      },
+      "widgets_values": [],
+      "title": "선택한 조의 코드 진행 후보"
+    },
+    {
+      "id": 30,
+      "type": "YuE2MelodyAnchor",
+      "pos": [
+        2180,
+        120
       ],
       "size": [
         460,
         750
       ],
       "flags": {},
-      "order": 4,
+      "order": 14,
       "mode": 0,
       "inputs": [
         {
           "name": "abc",
           "type": "STRING",
-          "link": 4,
+          "link": 15,
           "widget": {
             "name": "abc"
           }
@@ -187,7 +619,7 @@
           "name": "anchor",
           "type": "YUE2_MELODY_ANCHOR",
           "links": [
-            5
+            16
           ]
         }
       ],
@@ -196,7 +628,7 @@
       },
       "widgets_values": [
         "",
-        "verse",
+        "intro",
         "1",
         "LOCK",
         1.0,
@@ -204,31 +636,32 @@
         "none",
         "keep_base",
         "auto",
-        "Vocal",
+        "Ins",
         0.25,
         0,
         ""
-      ]
+      ],
+      "title": "Intro · LOCK · 악기 멜로디"
     },
     {
-      "id": 6,
+      "id": 31,
       "type": "YuE2AppendMelodyAnchor",
       "pos": [
-        580,
-        920
+        2180,
+        940
       ],
       "size": [
         460,
         130
       ],
       "flags": {},
-      "order": 5,
+      "order": 15,
       "mode": 0,
       "inputs": [
         {
           "name": "anchor",
           "type": "YUE2_MELODY_ANCHOR",
-          "link": 5
+          "link": 16
         },
         {
           "name": "previous",
@@ -241,28 +674,387 @@
           "name": "anchors",
           "type": "YUE2_ANCHORS",
           "links": [
-            10
+            19
           ]
         }
       ],
       "properties": {
         "Node name for S&R": "YuE2AppendMelodyAnchor"
       },
-      "widgets_values": []
+      "widgets_values": [],
+      "title": "1. Intro 앵커"
     },
     {
-      "id": 7,
-      "type": "CheckpointLoaderSimple",
+      "id": 5,
+      "type": "YuE2MelodyAnchor",
       "pos": [
-        1120,
-        100
+        2700,
+        120
+      ],
+      "size": [
+        460,
+        750
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "abc",
+          "type": "STRING",
+          "link": 17,
+          "widget": {
+            "name": "abc"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "anchor",
+          "type": "YUE2_MELODY_ANCHOR",
+          "links": [
+            18
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "YuE2MelodyAnchor"
+      },
+      "widgets_values": [
+        "",
+        "chorus",
+        "1",
+        "LOCK",
+        1.0,
+        "pad_rest",
+        "none",
+        "recommend_only",
+        "auto",
+        "Vocal",
+        0.25,
+        0,
+        ""
+      ],
+      "title": "Chorus #1 · LOCK · 원본 멜로디"
+    },
+    {
+      "id": 6,
+      "type": "YuE2AppendMelodyAnchor",
+      "pos": [
+        2700,
+        940
       ],
       "size": [
         460,
         130
       ],
       "flags": {},
-      "order": 6,
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "anchor",
+          "type": "YUE2_MELODY_ANCHOR",
+          "link": 18
+        },
+        {
+          "name": "previous",
+          "type": "YUE2_ANCHORS",
+          "link": 19
+        }
+      ],
+      "outputs": [
+        {
+          "name": "anchors",
+          "type": "YUE2_ANCHORS",
+          "links": [
+            21
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "YuE2AppendMelodyAnchor"
+      },
+      "widgets_values": [],
+      "title": "2. Chorus LOCK 추가"
+    },
+    {
+      "id": 37,
+      "type": "YuE2MelodyAnchor",
+      "pos": [
+        3220,
+        120
+      ],
+      "size": [
+        460,
+        750
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "anchor",
+          "type": "YUE2_MELODY_ANCHOR",
+          "links": [
+            20
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "YuE2MelodyAnchor"
+      },
+      "widgets_values": [
+        "",
+        "chorus",
+        "2",
+        "VARIATION",
+        1.0,
+        "pad_rest",
+        "none",
+        "keep_base",
+        "auto",
+        "Vocal",
+        0.65,
+        17,
+        "chorus#1"
+      ],
+      "title": "Chorus #2 · VARIATION · chorus#1 재사용"
+    },
+    {
+      "id": 38,
+      "type": "YuE2AppendMelodyAnchor",
+      "pos": [
+        3220,
+        940
+      ],
+      "size": [
+        460,
+        130
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "anchor",
+          "type": "YUE2_MELODY_ANCHOR",
+          "link": 20
+        },
+        {
+          "name": "previous",
+          "type": "YUE2_ANCHORS",
+          "link": 21
+        }
+      ],
+      "outputs": [
+        {
+          "name": "anchors",
+          "type": "YUE2_ANCHORS",
+          "links": [
+            24
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "YuE2AppendMelodyAnchor"
+      },
+      "widgets_values": [],
+      "title": "3. Chorus VARIATION 추가"
+    },
+    {
+      "id": 35,
+      "type": "YuE2MelodyAnchor",
+      "pos": [
+        3740,
+        120
+      ],
+      "size": [
+        460,
+        750
+      ],
+      "flags": {},
+      "order": 20,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "abc",
+          "type": "STRING",
+          "link": 22,
+          "widget": {
+            "name": "abc"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "anchor",
+          "type": "YUE2_MELODY_ANCHOR",
+          "links": [
+            23
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "YuE2MelodyAnchor"
+      },
+      "widgets_values": [
+        "",
+        "bridge",
+        "1",
+        "LOCK",
+        1.0,
+        "pad_rest",
+        "none",
+        "reharmonize",
+        "auto",
+        "Vocal",
+        0.25,
+        0,
+        ""
+      ],
+      "title": "Bridge · LOCK + REHARMONIZE"
+    },
+    {
+      "id": 36,
+      "type": "YuE2AppendMelodyAnchor",
+      "pos": [
+        3740,
+        940
+      ],
+      "size": [
+        460,
+        130
+      ],
+      "flags": {},
+      "order": 21,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "anchor",
+          "type": "YUE2_MELODY_ANCHOR",
+          "link": 23
+        },
+        {
+          "name": "previous",
+          "type": "YUE2_ANCHORS",
+          "link": 24
+        }
+      ],
+      "outputs": [
+        {
+          "name": "anchors",
+          "type": "YUE2_ANCHORS",
+          "links": [
+            26
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "YuE2AppendMelodyAnchor"
+      },
+      "widgets_values": [],
+      "title": "4. Bridge 추가"
+    },
+    {
+      "id": 39,
+      "type": "YuE2MelodyAnchor",
+      "pos": [
+        4260,
+        120
+      ],
+      "size": [
+        460,
+        750
+      ],
+      "flags": {},
+      "order": 22,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "anchor",
+          "type": "YUE2_MELODY_ANCHOR",
+          "links": [
+            25
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "YuE2MelodyAnchor"
+      },
+      "widgets_values": [
+        "",
+        "verse",
+        "all",
+        "AI",
+        1.0,
+        "strict",
+        "suggest",
+        "recommend_only",
+        "auto",
+        "Vocal",
+        0.25,
+        0,
+        ""
+      ],
+      "title": "Verse · AI · 생성된 원본 유지"
+    },
+    {
+      "id": 40,
+      "type": "YuE2AppendMelodyAnchor",
+      "pos": [
+        4260,
+        940
+      ],
+      "size": [
+        460,
+        130
+      ],
+      "flags": {},
+      "order": 23,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "anchor",
+          "type": "YUE2_MELODY_ANCHOR",
+          "link": 25
+        },
+        {
+          "name": "previous",
+          "type": "YUE2_ANCHORS",
+          "link": 26
+        }
+      ],
+      "outputs": [
+        {
+          "name": "anchors",
+          "type": "YUE2_ANCHORS",
+          "links": [
+            33
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "YuE2AppendMelodyAnchor"
+      },
+      "widgets_values": [],
+      "title": "5. Verse AI 추가 → 병합"
+    },
+    {
+      "id": 7,
+      "type": "CheckpointLoaderSimple",
+      "pos": [
+        60,
+        120
+      ],
+      "size": [
+        460,
+        130
+      ],
+      "flags": {},
+      "order": 24,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -270,22 +1062,22 @@
           "name": "MODEL",
           "type": "MODEL",
           "links": [
-            18
+            41
           ]
         },
         {
           "name": "CLIP",
           "type": "CLIP",
           "links": [
-            6,
-            12
+            29,
+            35
           ]
         },
         {
           "name": "VAE",
           "type": "VAE",
           "links": [
-            23
+            46
           ]
         }
       ],
@@ -300,15 +1092,15 @@
       "id": 20,
       "type": "PrimitiveStringMultiline",
       "pos": [
-        1120,
-        300
+        2180,
+        1560
       ],
       "size": [
         460,
-        230
+        300
       ],
       "flags": {},
-      "order": 7,
+      "order": 25,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -316,8 +1108,7 @@
           "name": "STRING",
           "type": "STRING",
           "links": [
-            7,
-            13
+            27
           ]
         }
       ],
@@ -325,23 +1116,23 @@
         "Node name for S&R": "PrimitiveStringMultiline"
       },
       "widgets_values": [
-        "Simple piano pop, 4/4, 96 BPM, C major, short melodic phrases."
+        "Gentle piano pop in 4/4. Follow the selected humming key and prefer the first recommended chord progression below. Generate a complete ABC plan with named intro, verse, chorus, verse, chorus, bridge and outro sections. Keep both chorus sections the same length."
       ],
-      "title": "Style (shared by ABC and Music)"
+      "title": "곡 스타일·구조"
     },
     {
       "id": 21,
       "type": "PrimitiveStringMultiline",
       "pos": [
-        1120,
-        600
+        2180,
+        1930
       ],
       "size": [
         460,
-        230
+        300
       ],
       "flags": {},
-      "order": 8,
+      "order": 26,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -349,8 +1140,8 @@
           "name": "STRING",
           "type": "STRING",
           "links": [
-            8,
-            14
+            31,
+            37
           ]
         }
       ],
@@ -358,34 +1149,86 @@
         "Node name for S&R": "PrimitiveStringMultiline"
       },
       "widgets_values": [
-        "[chorus]\nA little tune begins today\nWe let its gentle colors play\n[verse]\nA quiet step along the way\nWe bring the melody to stay"
+        "[intro]\n[verse]\nA quiet step along the way\nWe bring the melody to stay\n[chorus]\nA little tune begins today\nWe let its gentle colors play\n[verse]\nAnother light across the floor\nThe melody returns once more\n[chorus]\nA little tune begins today\nWe let its gentle colors play\n[bridge]\nA different path beneath the sky\nThe softer notes can rise and fly\n[outro]\nWe keep a little tune nearby"
       ],
-      "title": "Lyrics (shared by ABC and Music)"
+      "title": "전체 가사 (Chorus 2회)"
+    },
+    {
+      "id": 26,
+      "type": "StringConcatenate",
+      "pos": [
+        2700,
+        1560
+      ],
+      "size": [
+        460,
+        230
+      ],
+      "flags": {},
+      "order": 27,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "string_a",
+          "type": "STRING",
+          "link": 27,
+          "widget": {
+            "name": "string_a"
+          }
+        },
+        {
+          "name": "string_b",
+          "type": "STRING",
+          "link": 28,
+          "widget": {
+            "name": "string_b"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [
+            30,
+            36
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "StringConcatenate"
+      },
+      "widgets_values": [
+        "",
+        "",
+        "\n\nSelected humming key/chord guidance (prefer the first progression):\n"
+      ],
+      "title": "스타일 + 선택한 조·코드 지침"
     },
     {
       "id": 8,
       "type": "YuE2GenerateABC",
       "pos": [
-        1120,
-        900
+        2700,
+        1860
       ],
       "size": [
         460,
         510
       ],
       "flags": {},
-      "order": 9,
+      "order": 28,
       "mode": 0,
       "inputs": [
         {
           "name": "clip",
           "type": "CLIP",
-          "link": 6
+          "link": 29
         },
         {
           "name": "style",
           "type": "STRING",
-          "link": 7,
+          "link": 30,
           "widget": {
             "name": "style"
           }
@@ -393,7 +1236,7 @@
         {
           "name": "lyrics",
           "type": "STRING",
-          "link": 8,
+          "link": 31,
           "widget": {
             "name": "lyrics"
           }
@@ -404,8 +1247,8 @@
           "name": "abc",
           "type": "STRING",
           "links": [
-            9,
-            25
+            32,
+            48
           ]
         }
       ],
@@ -418,33 +1261,34 @@
         0,
         "fixed",
         "full",
-        2048,
+        8192,
         0.7,
         0.9,
         30,
         1.005,
         100
-      ]
+      ],
+      "title": "YuE2 전체 곡 ABC 계획"
     },
     {
       "id": 9,
       "type": "YuE2HumSongComposer",
       "pos": [
-        1660,
-        100
+        3340,
+        1560
       ],
       "size": [
         460,
         250
       ],
       "flags": {},
-      "order": 10,
+      "order": 29,
       "mode": 0,
       "inputs": [
         {
           "name": "base_abc",
           "type": "STRING",
-          "link": 9,
+          "link": 32,
           "widget": {
             "name": "base_abc"
           }
@@ -452,7 +1296,7 @@
         {
           "name": "anchors",
           "type": "YUE2_ANCHORS",
-          "link": 10
+          "link": 33
         }
       ],
       "outputs": [
@@ -460,16 +1304,16 @@
           "name": "final_abc",
           "type": "STRING",
           "links": [
-            11,
-            15,
-            27
+            34,
+            38,
+            50
           ]
         },
         {
           "name": "composition_report",
           "type": "STRING",
           "links": [
-            26
+            49
           ]
         },
         {
@@ -486,27 +1330,28 @@
         "",
         "none",
         "strict"
-      ]
+      ],
+      "title": "전체 곡에 지정 구간 병합"
     },
     {
       "id": 10,
       "type": "YuE2ABCValidate",
       "pos": [
-        1660,
-        420
+        3340,
+        1880
       ],
       "size": [
         460,
         180
       ],
       "flags": {},
-      "order": 11,
+      "order": 30,
       "mode": 0,
       "inputs": [
         {
           "name": "abc",
           "type": "STRING",
-          "link": 11,
+          "link": 34,
           "widget": {
             "name": "abc"
           }
@@ -530,32 +1375,33 @@
       "widgets_values": [
         "",
         true
-      ]
+      ],
+      "title": "최종 ABC 무결성 검사"
     },
     {
       "id": 11,
       "type": "YuE2GenerateMusic",
       "pos": [
-        2200,
-        100
+        4460,
+        1560
       ],
       "size": [
         460,
         540
       ],
       "flags": {},
-      "order": 12,
+      "order": 31,
       "mode": 0,
       "inputs": [
         {
           "name": "clip",
           "type": "CLIP",
-          "link": 12
+          "link": 35
         },
         {
           "name": "style",
           "type": "STRING",
-          "link": 13,
+          "link": 36,
           "widget": {
             "name": "style"
           }
@@ -563,7 +1409,7 @@
         {
           "name": "lyrics",
           "type": "STRING",
-          "link": 14,
+          "link": 37,
           "widget": {
             "name": "lyrics"
           }
@@ -571,7 +1417,7 @@
         {
           "name": "abc",
           "type": "STRING",
-          "link": 15,
+          "link": 38,
           "widget": {
             "name": "abc"
           }
@@ -582,15 +1428,15 @@
           "name": "CONDITIONING",
           "type": "CONDITIONING",
           "links": [
-            17,
-            19
+            40,
+            42
           ]
         },
         {
           "name": "seconds",
           "type": "FLOAT",
           "links": [
-            16
+            39
           ]
         }
       ],
@@ -604,33 +1450,34 @@
         0,
         "fixed",
         "full",
-        24.0,
+        180.0,
         1.0,
         0.95,
         100,
         1.2,
         1.0
-      ]
+      ],
+      "title": "최종 ABC로 음악 생성 (상한 180초)"
     },
     {
       "id": 12,
       "type": "EmptyYuE2LatentAudio",
       "pos": [
-        2200,
-        710
+        4980,
+        1560
       ],
       "size": [
         460,
         150
       ],
       "flags": {},
-      "order": 13,
+      "order": 32,
       "mode": 0,
       "inputs": [
         {
           "name": "seconds",
           "type": "FLOAT",
-          "link": 16,
+          "link": 39,
           "widget": {
             "name": "seconds"
           }
@@ -641,7 +1488,7 @@
           "name": "LATENT",
           "type": "LATENT",
           "links": [
-            21
+            44
           ]
         }
       ],
@@ -651,27 +1498,28 @@
       "widgets_values": [
         120.0,
         1
-      ]
+      ],
+      "title": "실제 생성 길이 → Latent"
     },
     {
       "id": 13,
       "type": "ConditioningZeroOut",
       "pos": [
-        2200,
-        930
+        4980,
+        1780
       ],
       "size": [
         460,
         110
       ],
       "flags": {},
-      "order": 14,
+      "order": 33,
       "mode": 0,
       "inputs": [
         {
           "name": "conditioning",
           "type": "CONDITIONING",
-          "link": 17
+          "link": 40
         }
       ],
       "outputs": [
@@ -679,7 +1527,7 @@
           "name": "CONDITIONING",
           "type": "CONDITIONING",
           "links": [
-            20
+            43
           ]
         }
       ],
@@ -692,36 +1540,36 @@
       "id": 14,
       "type": "KSampler",
       "pos": [
-        2740,
-        100
+        5500,
+        1560
       ],
       "size": [
         460,
         370
       ],
       "flags": {},
-      "order": 15,
+      "order": 34,
       "mode": 0,
       "inputs": [
         {
           "name": "model",
           "type": "MODEL",
-          "link": 18
+          "link": 41
         },
         {
           "name": "positive",
           "type": "CONDITIONING",
-          "link": 19
+          "link": 42
         },
         {
           "name": "negative",
           "type": "CONDITIONING",
-          "link": 20
+          "link": 43
         },
         {
           "name": "latent_image",
           "type": "LATENT",
-          "link": 21
+          "link": 44
         }
       ],
       "outputs": [
@@ -729,7 +1577,7 @@
           "name": "LATENT",
           "type": "LATENT",
           "links": [
-            22
+            45
           ]
         }
       ],
@@ -750,26 +1598,26 @@
       "id": 15,
       "type": "VAEDecodeAudio",
       "pos": [
-        2740,
-        540
+        5500,
+        2000
       ],
       "size": [
         460,
         130
       ],
       "flags": {},
-      "order": 16,
+      "order": 35,
       "mode": 0,
       "inputs": [
         {
           "name": "samples",
           "type": "LATENT",
-          "link": 22
+          "link": 45
         },
         {
           "name": "vae",
           "type": "VAE",
-          "link": 23
+          "link": 46
         }
       ],
       "outputs": [
@@ -777,7 +1625,7 @@
           "name": "AUDIO",
           "type": "AUDIO",
           "links": [
-            24
+            47
           ]
         }
       ],
@@ -790,21 +1638,21 @@
       "id": 16,
       "type": "PreviewAudio",
       "pos": [
-        2740,
-        740
+        5500,
+        2200
       ],
       "size": [
         460,
         220
       ],
       "flags": {},
-      "order": 17,
+      "order": 36,
       "mode": 0,
       "inputs": [
         {
           "name": "audio",
           "type": "AUDIO",
-          "link": 24
+          "link": 47
         }
       ],
       "outputs": [
@@ -817,27 +1665,28 @@
       "properties": {
         "Node name for S&R": "PreviewAudio"
       },
-      "widgets_values": []
+      "widgets_values": [],
+      "title": "완성 오디오 미리보기"
     },
     {
       "id": 17,
       "type": "PreviewAny",
       "pos": [
-        1120,
-        1480
+        2700,
+        2440
       ],
       "size": [
         460,
         280
       ],
       "flags": {},
-      "order": 18,
+      "order": 37,
       "mode": 0,
       "inputs": [
         {
           "name": "source",
           "type": "*",
-          "link": 25
+          "link": 48
         }
       ],
       "outputs": [
@@ -851,27 +1700,27 @@
         "Node name for S&R": "PreviewAny"
       },
       "widgets_values": [],
-      "title": "Base ABC: check verse#1 and length"
+      "title": "Base ABC — 구간 이름·마디 수 확인"
     },
     {
       "id": 18,
       "type": "PreviewAny",
       "pos": [
-        1660,
-        670
+        3860,
+        1560
       ],
       "size": [
         460,
         280
       ],
       "flags": {},
-      "order": 19,
+      "order": 38,
       "mode": 0,
       "inputs": [
         {
           "name": "source",
           "type": "*",
-          "link": 26
+          "link": 49
         }
       ],
       "outputs": [
@@ -885,27 +1734,27 @@
         "Node name for S&R": "PreviewAny"
       },
       "widgets_values": [],
-      "title": "Composition report"
+      "title": "길이·조성·화성·변주 보고서"
     },
     {
       "id": 19,
       "type": "PreviewAny",
       "pos": [
-        1660,
-        1020
+        3860,
+        1910
       ],
       "size": [
         460,
         280
       ],
       "flags": {},
-      "order": 20,
+      "order": 39,
       "mode": 0,
       "inputs": [
         {
           "name": "source",
           "type": "*",
-          "link": 27
+          "link": 50
         }
       ],
       "outputs": [
@@ -919,7 +1768,109 @@
         "Node name for S&R": "PreviewAny"
       },
       "widgets_values": [],
-      "title": "Final ABC"
+      "title": "최종 ABC"
+    },
+    {
+      "id": 41,
+      "type": "PreviewAny",
+      "pos": [
+        1100,
+        850
+      ],
+      "size": [
+        460,
+        280
+      ],
+      "flags": {},
+      "order": 40,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 51
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny"
+      },
+      "widgets_values": [],
+      "title": "Chorus 분석 보고서"
+    },
+    {
+      "id": 42,
+      "type": "PreviewAny",
+      "pos": [
+        580,
+        850
+      ],
+      "size": [
+        460,
+        280
+      ],
+      "flags": {},
+      "order": 41,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 52
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny"
+      },
+      "widgets_values": [],
+      "title": "Intro 분석 보고서"
+    },
+    {
+      "id": 43,
+      "type": "PreviewAny",
+      "pos": [
+        1620,
+        850
+      ],
+      "size": [
+        460,
+        280
+      ],
+      "flags": {},
+      "order": 42,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 53
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny"
+      },
+      "widgets_values": [],
+      "title": "Bridge 분석 보고서"
     }
   ],
   "links": [
@@ -949,6 +1900,110 @@
     ],
     [
       4,
+      2,
+      0,
+      28,
+      0,
+      "AUDIO_ENCODER"
+    ],
+    [
+      5,
+      27,
+      0,
+      28,
+      1,
+      "AUDIO"
+    ],
+    [
+      6,
+      28,
+      0,
+      29,
+      0,
+      "STRING"
+    ],
+    [
+      7,
+      2,
+      0,
+      33,
+      0,
+      "AUDIO_ENCODER"
+    ],
+    [
+      8,
+      32,
+      0,
+      33,
+      1,
+      "AUDIO"
+    ],
+    [
+      9,
+      33,
+      0,
+      34,
+      0,
+      "STRING"
+    ],
+    [
+      10,
+      4,
+      0,
+      22,
+      0,
+      "YUE2_HUM_ANALYSIS"
+    ],
+    [
+      11,
+      4,
+      0,
+      23,
+      0,
+      "YUE2_HUM_ANALYSIS"
+    ],
+    [
+      12,
+      22,
+      0,
+      23,
+      1,
+      "YUE2_KEY_CANDIDATES"
+    ],
+    [
+      13,
+      22,
+      1,
+      24,
+      0,
+      "STRING"
+    ],
+    [
+      14,
+      23,
+      1,
+      25,
+      0,
+      "STRING"
+    ],
+    [
+      15,
+      29,
+      2,
+      30,
+      0,
+      "STRING"
+    ],
+    [
+      16,
+      30,
+      0,
+      31,
+      0,
+      "YUE2_MELODY_ANCHOR"
+    ],
+    [
+      17,
       4,
       2,
       5,
@@ -956,7 +2011,7 @@
       "STRING"
     ],
     [
-      5,
+      18,
       5,
       0,
       6,
@@ -964,7 +2019,87 @@
       "YUE2_MELODY_ANCHOR"
     ],
     [
+      19,
+      31,
+      0,
       6,
+      1,
+      "YUE2_ANCHORS"
+    ],
+    [
+      20,
+      37,
+      0,
+      38,
+      0,
+      "YUE2_MELODY_ANCHOR"
+    ],
+    [
+      21,
+      6,
+      0,
+      38,
+      1,
+      "YUE2_ANCHORS"
+    ],
+    [
+      22,
+      34,
+      2,
+      35,
+      0,
+      "STRING"
+    ],
+    [
+      23,
+      35,
+      0,
+      36,
+      0,
+      "YUE2_MELODY_ANCHOR"
+    ],
+    [
+      24,
+      38,
+      0,
+      36,
+      1,
+      "YUE2_ANCHORS"
+    ],
+    [
+      25,
+      39,
+      0,
+      40,
+      0,
+      "YUE2_MELODY_ANCHOR"
+    ],
+    [
+      26,
+      36,
+      0,
+      40,
+      1,
+      "YUE2_ANCHORS"
+    ],
+    [
+      27,
+      20,
+      0,
+      26,
+      0,
+      "STRING"
+    ],
+    [
+      28,
+      23,
+      1,
+      26,
+      1,
+      "STRING"
+    ],
+    [
+      29,
       7,
       1,
       8,
@@ -972,15 +2107,15 @@
       "CLIP"
     ],
     [
-      7,
-      20,
+      30,
+      26,
       0,
       8,
       1,
       "STRING"
     ],
     [
-      8,
+      31,
       21,
       0,
       8,
@@ -988,7 +2123,7 @@
       "STRING"
     ],
     [
-      9,
+      32,
       8,
       0,
       9,
@@ -996,15 +2131,15 @@
       "STRING"
     ],
     [
-      10,
-      6,
+      33,
+      40,
       0,
       9,
       1,
       "YUE2_ANCHORS"
     ],
     [
-      11,
+      34,
       9,
       0,
       10,
@@ -1012,7 +2147,7 @@
       "STRING"
     ],
     [
-      12,
+      35,
       7,
       1,
       11,
@@ -1020,15 +2155,15 @@
       "CLIP"
     ],
     [
-      13,
-      20,
+      36,
+      26,
       0,
       11,
       1,
       "STRING"
     ],
     [
-      14,
+      37,
       21,
       0,
       11,
@@ -1036,7 +2171,7 @@
       "STRING"
     ],
     [
-      15,
+      38,
       9,
       0,
       11,
@@ -1044,7 +2179,7 @@
       "STRING"
     ],
     [
-      16,
+      39,
       11,
       1,
       12,
@@ -1052,7 +2187,7 @@
       "FLOAT"
     ],
     [
-      17,
+      40,
       11,
       0,
       13,
@@ -1060,7 +2195,7 @@
       "CONDITIONING"
     ],
     [
-      18,
+      41,
       7,
       0,
       14,
@@ -1068,7 +2203,7 @@
       "MODEL"
     ],
     [
-      19,
+      42,
       11,
       0,
       14,
@@ -1076,7 +2211,7 @@
       "CONDITIONING"
     ],
     [
-      20,
+      43,
       13,
       0,
       14,
@@ -1084,7 +2219,7 @@
       "CONDITIONING"
     ],
     [
-      21,
+      44,
       12,
       0,
       14,
@@ -1092,7 +2227,7 @@
       "LATENT"
     ],
     [
-      22,
+      45,
       14,
       0,
       15,
@@ -1100,7 +2235,7 @@
       "LATENT"
     ],
     [
-      23,
+      46,
       7,
       2,
       15,
@@ -1108,7 +2243,7 @@
       "VAE"
     ],
     [
-      24,
+      47,
       15,
       0,
       16,
@@ -1116,7 +2251,7 @@
       "AUDIO"
     ],
     [
-      25,
+      48,
       8,
       0,
       17,
@@ -1124,7 +2259,7 @@
       "STRING"
     ],
     [
-      26,
+      49,
       9,
       1,
       18,
@@ -1132,84 +2267,120 @@
       "STRING"
     ],
     [
-      27,
+      50,
       9,
       0,
       19,
+      0,
+      "STRING"
+    ],
+    [
+      51,
+      4,
+      1,
+      41,
+      0,
+      "STRING"
+    ],
+    [
+      52,
+      29,
+      1,
+      42,
+      0,
+      "STRING"
+    ],
+    [
+      53,
+      34,
+      1,
+      43,
       0,
       "STRING"
     ]
   ],
   "groups": [
     {
-      "title": "Audio and transcription",
+      "title": "01 모델",
       "bounding": [
-        20,
         40,
-        500,
-        980
+        60,
+        520,
+        460
       ],
       "color": "#3f6377",
       "font_size": 24,
       "flags": {}
     },
     {
-      "title": "Melody anchor",
+      "title": "02 Intro / Chorus / Bridge 허밍 전사·분석",
       "bounding": [
         560,
-        40,
-        500,
-        1070
+        60,
+        1560,
+        1140
       ],
       "color": "#3f6377",
       "font_size": 24,
       "flags": {}
     },
     {
-      "title": "Style, lyrics and base plan",
+      "title": "03 Chorus 조·모드 후보와 코드 진행 선택",
       "bounding": [
-        1100,
-        40,
-        500,
-        1780
+        560,
+        1500,
+        1040,
+        760
       ],
-      "color": "#3f6377",
+      "color": "#79623c",
       "font_size": 24,
       "flags": {}
     },
     {
-      "title": "Compose and validate",
+      "title": "04 추천을 반영한 스타일·가사 → 전체 곡 ABC",
       "bounding": [
-        1640,
-        40,
-        500,
-        1320
+        2160,
+        1500,
+        1040,
+        1290
       ],
-      "color": "#3f6377",
+      "color": "#79623c",
       "font_size": 24,
       "flags": {}
     },
     {
-      "title": "Music conditioning",
+      "title": "05 Intro LOCK → Chorus LOCK → 재등장 VARIATION → Bridge 화성 → Verse AI",
       "bounding": [
-        2180,
-        40,
-        500,
-        1060
+        2160,
+        60,
+        2600,
+        1080
       ],
-      "color": "#3f6377",
+      "color": "#634879",
       "font_size": 24,
       "flags": {}
     },
     {
-      "title": "Sampling and audio preview",
+      "title": "06 지정 구간 병합·검증·보고서",
       "bounding": [
-        2720,
-        40,
-        500,
-        980
+        3320,
+        1500,
+        1040,
+        760
       ],
-      "color": "#3f6377",
+      "color": "#3c7152",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "07 최종 ABC → YuE2 생성 → 샘플링 → 오디오",
+      "bounding": [
+        4440,
+        1500,
+        1560,
+        990
+      ],
+      "color": "#754c4c",
       "font_size": 24,
       "flags": {}
     }
@@ -1217,7 +2388,7 @@
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.5,
+      "scale": 0.3,
       "offset": [
         20,
         20
