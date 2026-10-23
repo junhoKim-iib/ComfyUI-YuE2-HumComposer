@@ -2,7 +2,7 @@
 from dataclasses import dataclass, replace
 from fractions import Fraction
 
-from ..abc.model import Score, Measure, Note, Rest, ChordSymbol, SourceSpan, Voice
+from ..abc.model import Score, Measure, Note, Rest, ChordSymbol, SourceSpan, Voice, ContextChange
 from ..abc.parser import parse_abc, parse_key
 from ..abc.serializer import rewrite_measures
 from ..abc.validation import require_valid, validate_score, format_validation
@@ -104,18 +104,29 @@ def _note_name(midi: int | None) -> str:
 
 
 def _emit_bar(bar: Measure, tones: tuple[Tone, ...], start: Fraction,
-              unit: Fraction, chords: tuple[ChordSymbol, ...]) -> str:
+              unit: Fraction, chords: tuple[ChordSymbol, ...],
+              contexts: tuple[tuple[ContextChange,str], ...] = ()) -> str:
     end = start+bar.duration
     points = {start,end}
     points.update(t.onset for t in tones if start<t.onset<end)
     points.update(t.onset+t.duration for t in tones if start<t.onset+t.duration<end)
     chord_map = {c.onset-bar.onset+start:c.text for c in chords}
     points.update(chord_map)
+    context_map: dict[Fraction,list[str]] = {}
+    for change,text in contexts:
+        at = change.onset-bar.onset+start
+        if not start<=at<=end:
+            raise ValueError('Context change falls outside edited measure')
+        context_map.setdefault(at,[]).append(text)
+    points.update(context_map)
     positions = sorted(points)
     text = []
+    def emit_markers(at: Fraction) -> None:
+        text.extend(context_map.get(at,()))
+        if at in chord_map:
+            text.append('"'+chord_map[at]+'"')
     for a,b in zip(positions,positions[1:]):
-        if a in chord_map:
-            text.append('"'+chord_map[a]+'"')
+        emit_markers(a)
         tone = next((t for t in tones if t.onset<=a and t.onset+t.duration>=b),None)
         if tone is None:
             raise ValueError(f'Anchor has uncovered interval {a}..{b}')
@@ -128,7 +139,12 @@ def _emit_bar(bar: Measure, tones: tuple[Tone, ...], start: Fraction,
             remaining -= length
             tied = tone.midi is not None and (remaining>0 or b<tone.onset+tone.duration)
             text.append(_note_name(tone.midi)+(str(length) if length!=1 else '')+('-' if tied else ''))
+    emit_markers(end)
     return ''.join(text)+'|'
+
+
+def _context_signature(score: Score) -> tuple:
+    return tuple(sorted(((c.voice_id,c.kind,c.onset,c.value) for c in score.changes),key=repr))
 
 
 def _bar_signature(bar: Measure) -> tuple:
@@ -205,6 +221,7 @@ def compose_song(base_abc: str, anchors: tuple[MelodyAnchor, ...], global_key: s
     warnings: list[str] = [i.message for i in validate_score(base,native=True) if i.severity=='warning']
     edits = {}
     expected: dict[tuple[str,int],tuple[Tone, ...]] = {}
+    preserved_chords: dict[tuple[str,int],tuple] = {}
     sources: dict[str,str] = {}
     for anchor in anchors:
         targets = [s for s in base.sections if s.name==anchor.section and (anchor.occurrence=='all' or s.occurrence==int(anchor.occurrence))]
@@ -231,8 +248,12 @@ def compose_song(base_abc: str, anchors: tuple[MelodyAnchor, ...], global_key: s
             if any((anchor.target_voice,b.index) in edits for b in bars):
                 raise ValueError(f'Overlapping active anchors at {section.id}/{anchor.target_voice}')
             for c in base.changes:
-                if c.voice_id==anchor.target_voice and any(b.span.start<=c.span.start<b.span.end for b in bars):
+                if c.voice_id==anchor.target_voice and c.kind not in ('K','M') and any(b.span.start<=c.span.start<b.span.end for b in bars):
                     raise ValueError(f'{section.id}: inline {c.kind}: change in edited measure needs explicit adaptation')
+            marker_count = sum(c.voice_id==anchor.target_voice and c.kind in ('K','M')
+                               and any(b.span.start<=c.span.start<b.span.end for b in bars) for c in base.changes)
+            if marker_count:
+                report.append(f'  CONTEXT: {marker_count} original key/meter markers retained at exact onsets')
             source = parse_abc(abc)
             require_valid(source)
             tones,source_bars = _tones(source,anchor.source_voice)
@@ -262,13 +283,19 @@ def compose_song(base_abc: str, anchors: tuple[MelodyAnchor, ...], global_key: s
             if anchor.mode=='VARIATION':
                 if any(b.key!=source_key for b in source_bars) or any(c.kind=='K' and c.onset>0 for c in source.changes):
                     raise ValueError('VARIATION requires a single source key; LOCK supports key-changing sources')
+                if any(c.voice_id==anchor.target_voice and c.kind=='K' and c.value!=bars[0].key
+                       and bars[0].onset<=c.onset<bars[-1].onset+bars[-1].duration for c in base.changes):
+                    raise ValueError('VARIATION requires a single target key; use LOCK for target modulation')
                 before_variation = tones
+                meter_grid = tuple((b.onset-bars[0].onset,b.meter) for b in bars)
                 tones,metric = generate_variation(tones,effective_key.tonic,effective_key.mode,
-                                                 anchor.variation_amount*anchor.strength,anchor.seed)
+                                                 anchor.variation_amount*anchor.strength,anchor.seed,meter_grid=meter_grid)
                 report.append(f'  Motif similarity {metric.overall:.3f}; contour {metric.contour:.3f}; '
                               f'rhythm {metric.rhythm:.3f}; important notes {metric.important_retention:.3f}; '
                               f'ending retained={metric.ending_retained}; seed={anchor.seed}')
                 report.append(f'  VARIATION changed {sum(a.midi!=b.midi for a,b in zip(before_variation,tones))} notes; protected-only motifs remain unchanged.')
+                if any(b.meter.numerator not in (2,3,4,6,9,12) for b in bars):
+                    report.append('  Irregular meter: conventional pulse grid protected; additive grouping not inferred.')
             fit,conflicts = _harmony_fit(base,'Vocal',bars,tones)
             report.append(f'  BASE HARMONY compatibility {fit:.3f}; policy={anchor.harmony_policy}')
             if anchor.harmony_policy=='recommend_only':
@@ -290,12 +317,25 @@ def compose_song(base_abc: str, anchors: tuple[MelodyAnchor, ...], global_key: s
                     chords = ()
                 elif reharmony is not None:
                     chords = (ChordSymbol(reharmony.chords[i].name,b.onset,SourceSpan(0,0)),)
-                edits[(anchor.target_voice,b.index)] = _emit_bar(b,tones,start,_unit_at(base,anchor.target_voice,b.onset),chords)
+                contexts = []
+                for c in base.changes:
+                    if c.voice_id==anchor.target_voice and b.span.start<=c.span.start<b.span.end:
+                        raw = c.span.text(base.source)
+                        newline = '\r\n' if '\r\n' in base.source else '\n'
+                        contexts.append((c,raw if raw.startswith('[') else newline+raw+newline))
+                edits[(anchor.target_voice,b.index)] = _emit_bar(b,tones,start,_unit_at(base,anchor.target_voice,b.onset),chords,tuple(contexts))
+                if anchor.harmony_policy in ('keep_base','recommend_only'):
+                    preserved_chords[(anchor.target_voice,b.index)] = tuple((c.text,c.onset) for c in b.chords)
                 start += b.duration
             expected[(anchor.target_voice,selected.start_measure)] = tones
     result_text = rewrite_measures(base,edits)
     final = parse_abc(result_text)
     require_valid(final,native=True)
+    if _context_signature(final)!=_context_signature(base):
+        raise ValueError('Internal invariant failure: key/meter/tempo/unit timeline changed')
+    for (voice_id,index),chords in preserved_chords.items():
+        if tuple((c.text,c.onset) for c in final.voice(voice_id).measures[index].chords)!=chords:
+            raise ValueError('Internal invariant failure: retained chord symbols/timing changed')
     if tuple((s.name,s.occurrence,s.voice_ranges) for s in final.sections)!=tuple((s.name,s.occurrence,s.voice_ranges) for s in base.sections):
         raise ValueError('Internal invariant failure: section structure changed')
     for v in base.voices:

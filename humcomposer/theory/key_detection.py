@@ -44,7 +44,7 @@ class KeyCandidate:
 def metric_weight(onset: Fraction, meter: Meter) -> float:
     if onset == 0:
         return 1.8
-    beat = Fraction(3 if meter.denominator == 8 and meter.numerator % 3 == 0 else 1, meter.denominator)
+    beat = meter.beat_duration
     return 1.3 if onset % beat == 0 else 1.0
 
 

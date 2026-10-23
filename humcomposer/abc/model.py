@@ -29,6 +29,11 @@ class Meter:
     def duration(self) -> Fraction:
         return Fraction(self.numerator, self.denominator)
 
+    @property
+    def beat_duration(self) -> Fraction:
+        """Conventional compound beat; irregular grouping stays unspecified."""
+        return Fraction(3 if self.numerator>3 and self.numerator%3==0 else 1,self.denominator)
+
 
 @dataclass(frozen=True)
 class KeySignature:
