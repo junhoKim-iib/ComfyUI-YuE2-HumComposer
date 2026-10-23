@@ -4,6 +4,7 @@ __pycache__/
 .test-deps/
 .native-smoke/
 .native-gpu-smoke/
+.native-sheetsage-smoke/
 *.egg-info/
 build/
 dist/
