@@ -1,17 +1,17 @@
 {
-  "last_node_id": 44,
-  "last_link_id": 55,
+  "last_node_id": 47,
+  "last_link_id": 61,
   "nodes": [
     {
-      "id": 2,
-      "type": "PrimitiveStringMultiline",
+      "id": 45,
+      "type": "PrimitiveBoolean",
       "pos": [
-        60,
-        320
+        1100,
+        120
       ],
       "size": [
         460,
-        300
+        100
       ],
       "flags": {},
       "order": 0,
@@ -19,137 +19,95 @@
       "inputs": [],
       "outputs": [
         {
-          "name": "STRING",
-          "type": "STRING",
+          "name": "BOOLEAN",
+          "type": "BOOLEAN",
           "links": [
-            1,
-            3,
-            5
+            4,
+            22,
+            25
           ]
         }
       ],
       "properties": {
-        "Node name for S&R": "PrimitiveStringMultiline"
+        "Node name for S&R": "PrimitiveBoolean"
       },
       "widgets_values": [
-        "sheetsage2_bf16.safetensors"
+        false
       ],
-      "title": "SheetSage2 모델명 · 오디오가 있을 때만 사용"
+      "title": "Chorus 오디오 사용 · BOOL"
     },
     {
-      "id": 3,
-      "type": "YuE2OptionalAudioToABC",
+      "id": 1,
+      "type": "LoadAudio",
       "pos": [
         1100,
-        120
+        290
       ],
       "size": [
         460,
-        210
+        200
       ],
       "flags": {},
       "order": 1,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "audio_encoder_name",
-          "type": "STRING",
-          "link": 1,
-          "widget": {
-            "name": "audio_encoder_name"
-          }
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
-          "name": "abc",
-          "type": "STRING",
+          "name": "AUDIO",
+          "type": "AUDIO",
           "links": [
             2
-          ]
-        },
-        {
-          "name": "has_audio",
-          "type": "BOOLEAN",
-          "links": [
-            16,
-            19
           ]
         }
       ],
       "properties": {
-        "Node name for S&R": "YuE2OptionalAudioToABC"
+        "Node name for S&R": "LoadAudio"
       },
       "widgets_values": [
-        "",
-        "melody",
-        "sheetsage2_bf16.safetensors"
+        ""
       ],
-      "title": "Chorus 오디오 (선택사항)"
+      "title": "Chorus 오디오 파일"
     },
     {
-      "id": 4,
-      "type": "YuE2HumMelodyAnalyze",
+      "id": 2,
+      "type": "AudioEncoderLoader",
       "pos": [
-        1100,
-        400
+        60,
+        320
       ],
       "size": [
         460,
-        170
+        130
       ],
       "flags": {},
       "order": 2,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "abc",
-          "type": "STRING",
-          "link": 2,
-          "widget": {
-            "name": "abc"
-          }
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
-          "name": "analysis",
-          "type": "YUE2_HUM_ANALYSIS",
+          "name": "AUDIO_ENCODER",
+          "type": "AUDIO_ENCODER",
           "links": [
-            7,
-            8
-          ]
-        },
-        {
-          "name": "summary",
-          "type": "STRING",
-          "links": [
-            52
-          ]
-        },
-        {
-          "name": "normalized_abc",
-          "type": "STRING",
-          "links": [
-            15
+            1,
+            5,
+            9
           ]
         }
       ],
       "properties": {
-        "Node name for S&R": "YuE2HumMelodyAnalyze"
+        "Node name for S&R": "AudioEncoderLoader"
       },
       "widgets_values": [
-        "",
-        "auto"
+        "sheetsage2_bf16.safetensors"
       ],
-      "title": "Chorus 멜로디 분석"
+      "title": "공식 SheetSage2 모델 로더"
     },
     {
-      "id": 28,
-      "type": "YuE2OptionalAudioToABC",
+      "id": 3,
+      "type": "SheetSage2AudioToABC",
       "pos": [
-        580,
-        120
+        1100,
+        560
       ],
       "size": [
         460,
@@ -160,12 +118,14 @@
       "mode": 0,
       "inputs": [
         {
-          "name": "audio_encoder_name",
-          "type": "STRING",
-          "link": 3,
-          "widget": {
-            "name": "audio_encoder_name"
-          }
+          "name": "audio_encoder",
+          "type": "AUDIO_ENCODER",
+          "link": 1
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 2
         }
       ],
       "outputs": [
@@ -173,33 +133,24 @@
           "name": "abc",
           "type": "STRING",
           "links": [
-            4
-          ]
-        },
-        {
-          "name": "has_audio",
-          "type": "BOOLEAN",
-          "links": [
-            13
+            3
           ]
         }
       ],
       "properties": {
-        "Node name for S&R": "YuE2OptionalAudioToABC"
+        "Node name for S&R": "SheetSage2AudioToABC"
       },
       "widgets_values": [
-        "",
-        "melody",
-        "sheetsage2_bf16.safetensors"
+        "melody"
       ],
-      "title": "Intro 오디오 (선택사항)"
+      "title": "공식 Chorus 전사"
     },
     {
-      "id": 29,
+      "id": 4,
       "type": "YuE2HumMelodyAnalyze",
       "pos": [
-        580,
-        400
+        1100,
+        840
       ],
       "size": [
         460,
@@ -212,9 +163,17 @@
         {
           "name": "abc",
           "type": "STRING",
-          "link": 4,
+          "link": 3,
           "widget": {
             "name": "abc"
+          }
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "link": 4,
+          "widget": {
+            "name": "enabled"
           }
         }
       ],
@@ -222,20 +181,23 @@
         {
           "name": "analysis",
           "type": "YUE2_HUM_ANALYSIS",
-          "links": []
+          "links": [
+            13,
+            14
+          ]
         },
         {
           "name": "summary",
           "type": "STRING",
           "links": [
-            53
+            58
           ]
         },
         {
           "name": "normalized_abc",
           "type": "STRING",
           "links": [
-            12
+            21
           ]
         }
       ],
@@ -244,32 +206,100 @@
       },
       "widgets_values": [
         "",
-        "auto"
+        "auto",
+        true
       ],
-      "title": "Intro 멜로디 분석"
+      "title": "Chorus 멜로디 분석"
     },
     {
-      "id": 33,
-      "type": "YuE2OptionalAudioToABC",
+      "id": 46,
+      "type": "PrimitiveBoolean",
       "pos": [
-        1620,
+        580,
         120
+      ],
+      "size": [
+        460,
+        100
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "BOOLEAN",
+          "type": "BOOLEAN",
+          "links": [
+            8,
+            19
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PrimitiveBoolean"
+      },
+      "widgets_values": [
+        false
+      ],
+      "title": "Intro 오디오 사용 · BOOL"
+    },
+    {
+      "id": 27,
+      "type": "LoadAudio",
+      "pos": [
+        580,
+        290
+      ],
+      "size": [
+        460,
+        200
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": [
+            6
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadAudio"
+      },
+      "widgets_values": [
+        ""
+      ],
+      "title": "Intro 오디오 파일"
+    },
+    {
+      "id": 28,
+      "type": "SheetSage2AudioToABC",
+      "pos": [
+        580,
+        560
       ],
       "size": [
         460,
         210
       ],
       "flags": {},
-      "order": 5,
+      "order": 7,
       "mode": 0,
       "inputs": [
         {
-          "name": "audio_encoder_name",
-          "type": "STRING",
-          "link": 5,
-          "widget": {
-            "name": "audio_encoder_name"
-          }
+          "name": "audio_encoder",
+          "type": "AUDIO_ENCODER",
+          "link": 5
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 6
         }
       ],
       "outputs": [
@@ -277,48 +307,47 @@
           "name": "abc",
           "type": "STRING",
           "links": [
-            6
-          ]
-        },
-        {
-          "name": "has_audio",
-          "type": "BOOLEAN",
-          "links": [
-            23
+            7
           ]
         }
       ],
       "properties": {
-        "Node name for S&R": "YuE2OptionalAudioToABC"
+        "Node name for S&R": "SheetSage2AudioToABC"
       },
       "widgets_values": [
-        "",
-        "melody",
-        "sheetsage2_bf16.safetensors"
+        "melody"
       ],
-      "title": "Bridge 오디오 (선택사항)"
+      "title": "공식 Intro 전사"
     },
     {
-      "id": 34,
+      "id": 29,
       "type": "YuE2HumMelodyAnalyze",
       "pos": [
-        1620,
-        400
+        580,
+        840
       ],
       "size": [
         460,
         170
       ],
       "flags": {},
-      "order": 6,
+      "order": 8,
       "mode": 0,
       "inputs": [
         {
           "name": "abc",
           "type": "STRING",
-          "link": 6,
+          "link": 7,
           "widget": {
             "name": "abc"
+          }
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "link": 8,
+          "widget": {
+            "name": "enabled"
           }
         }
       ],
@@ -332,14 +361,14 @@
           "name": "summary",
           "type": "STRING",
           "links": [
-            54
+            59
           ]
         },
         {
           "name": "normalized_abc",
           "type": "STRING",
           "links": [
-            22
+            18
           ]
         }
       ],
@@ -348,7 +377,179 @@
       },
       "widgets_values": [
         "",
-        "auto"
+        "auto",
+        true
+      ],
+      "title": "Intro 멜로디 분석"
+    },
+    {
+      "id": 47,
+      "type": "PrimitiveBoolean",
+      "pos": [
+        1620,
+        120
+      ],
+      "size": [
+        460,
+        100
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "BOOLEAN",
+          "type": "BOOLEAN",
+          "links": [
+            12,
+            29
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PrimitiveBoolean"
+      },
+      "widgets_values": [
+        false
+      ],
+      "title": "Bridge 오디오 사용 · BOOL"
+    },
+    {
+      "id": 32,
+      "type": "LoadAudio",
+      "pos": [
+        1620,
+        290
+      ],
+      "size": [
+        460,
+        200
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": [
+            10
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadAudio"
+      },
+      "widgets_values": [
+        ""
+      ],
+      "title": "Bridge 오디오 파일"
+    },
+    {
+      "id": 33,
+      "type": "SheetSage2AudioToABC",
+      "pos": [
+        1620,
+        560
+      ],
+      "size": [
+        460,
+        210
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "audio_encoder",
+          "type": "AUDIO_ENCODER",
+          "link": 9
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 10
+        }
+      ],
+      "outputs": [
+        {
+          "name": "abc",
+          "type": "STRING",
+          "links": [
+            11
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SheetSage2AudioToABC"
+      },
+      "widgets_values": [
+        "melody"
+      ],
+      "title": "공식 Bridge 전사"
+    },
+    {
+      "id": 34,
+      "type": "YuE2HumMelodyAnalyze",
+      "pos": [
+        1620,
+        840
+      ],
+      "size": [
+        460,
+        170
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "abc",
+          "type": "STRING",
+          "link": 11,
+          "widget": {
+            "name": "abc"
+          }
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "link": 12,
+          "widget": {
+            "name": "enabled"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "analysis",
+          "type": "YUE2_HUM_ANALYSIS",
+          "links": []
+        },
+        {
+          "name": "summary",
+          "type": "STRING",
+          "links": [
+            60
+          ]
+        },
+        {
+          "name": "normalized_abc",
+          "type": "STRING",
+          "links": [
+            28
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "YuE2HumMelodyAnalyze"
+      },
+      "widgets_values": [
+        "",
+        "auto",
+        true
       ],
       "title": "Bridge 멜로디 분석"
     },
@@ -364,13 +565,13 @@
         180
       ],
       "flags": {},
-      "order": 7,
+      "order": 13,
       "mode": 0,
       "inputs": [
         {
           "name": "analysis",
           "type": "YUE2_HUM_ANALYSIS",
-          "link": 7
+          "link": 13
         }
       ],
       "outputs": [
@@ -378,14 +579,14 @@
           "name": "candidates",
           "type": "YUE2_KEY_CANDIDATES",
           "links": [
-            9
+            15
           ]
         },
         {
           "name": "report",
           "type": "STRING",
           "links": [
-            10
+            16
           ]
         }
       ],
@@ -410,18 +611,18 @@
         320
       ],
       "flags": {},
-      "order": 8,
+      "order": 14,
       "mode": 0,
       "inputs": [
         {
           "name": "analysis",
           "type": "YUE2_HUM_ANALYSIS",
-          "link": 8
+          "link": 14
         },
         {
           "name": "candidates",
           "type": "YUE2_KEY_CANDIDATES",
-          "link": 9
+          "link": 15
         }
       ],
       "outputs": [
@@ -434,8 +635,8 @@
           "name": "report",
           "type": "STRING",
           "links": [
-            11,
-            29
+            17,
+            35
           ]
         }
       ],
@@ -461,16 +662,16 @@
       ],
       "size": [
         460,
-        280
+        220
       ],
       "flags": {},
-      "order": 9,
+      "order": 15,
       "mode": 0,
       "inputs": [
         {
           "name": "source",
           "type": "*",
-          "link": 10
+          "link": 16
         }
       ],
       "outputs": [
@@ -491,20 +692,20 @@
       "type": "PreviewAny",
       "pos": [
         1100,
-        1910
+        1850
       ],
       "size": [
         460,
-        280
+        220
       ],
       "flags": {},
-      "order": 10,
+      "order": 16,
       "mode": 0,
       "inputs": [
         {
           "name": "source",
           "type": "*",
-          "link": 11
+          "link": 17
         }
       ],
       "outputs": [
@@ -532,13 +733,13 @@
         750
       ],
       "flags": {},
-      "order": 11,
+      "order": 17,
       "mode": 0,
       "inputs": [
         {
           "name": "abc",
           "type": "STRING",
-          "link": 12,
+          "link": 18,
           "widget": {
             "name": "abc"
           }
@@ -546,7 +747,7 @@
         {
           "name": "enabled",
           "type": "BOOLEAN",
-          "link": 13,
+          "link": 19,
           "widget": {
             "name": "enabled"
           }
@@ -557,7 +758,7 @@
           "name": "anchor",
           "type": "YUE2_MELODY_ANCHOR",
           "links": [
-            14
+            20
           ]
         }
       ],
@@ -594,13 +795,13 @@
         130
       ],
       "flags": {},
-      "order": 12,
+      "order": 18,
       "mode": 0,
       "inputs": [
         {
           "name": "anchor",
           "type": "YUE2_MELODY_ANCHOR",
-          "link": 14
+          "link": 20
         },
         {
           "name": "previous",
@@ -613,7 +814,7 @@
           "name": "anchors",
           "type": "YUE2_ANCHORS",
           "links": [
-            18
+            24
           ]
         }
       ],
@@ -635,13 +836,13 @@
         750
       ],
       "flags": {},
-      "order": 13,
+      "order": 19,
       "mode": 0,
       "inputs": [
         {
           "name": "abc",
           "type": "STRING",
-          "link": 15,
+          "link": 21,
           "widget": {
             "name": "abc"
           }
@@ -649,7 +850,7 @@
         {
           "name": "enabled",
           "type": "BOOLEAN",
-          "link": 16,
+          "link": 22,
           "widget": {
             "name": "enabled"
           }
@@ -660,7 +861,7 @@
           "name": "anchor",
           "type": "YUE2_MELODY_ANCHOR",
           "links": [
-            17
+            23
           ]
         }
       ],
@@ -697,18 +898,18 @@
         130
       ],
       "flags": {},
-      "order": 14,
+      "order": 20,
       "mode": 0,
       "inputs": [
         {
           "name": "anchor",
           "type": "YUE2_MELODY_ANCHOR",
-          "link": 17
+          "link": 23
         },
         {
           "name": "previous",
           "type": "YUE2_ANCHORS",
-          "link": 18
+          "link": 24
         }
       ],
       "outputs": [
@@ -716,7 +917,7 @@
           "name": "anchors",
           "type": "YUE2_ANCHORS",
           "links": [
-            21
+            27
           ]
         }
       ],
@@ -738,13 +939,13 @@
         750
       ],
       "flags": {},
-      "order": 15,
+      "order": 21,
       "mode": 0,
       "inputs": [
         {
           "name": "enabled",
           "type": "BOOLEAN",
-          "link": 19,
+          "link": 25,
           "widget": {
             "name": "enabled"
           }
@@ -755,7 +956,7 @@
           "name": "anchor",
           "type": "YUE2_MELODY_ANCHOR",
           "links": [
-            20
+            26
           ]
         }
       ],
@@ -792,18 +993,18 @@
         130
       ],
       "flags": {},
-      "order": 16,
+      "order": 22,
       "mode": 0,
       "inputs": [
         {
           "name": "anchor",
           "type": "YUE2_MELODY_ANCHOR",
-          "link": 20
+          "link": 26
         },
         {
           "name": "previous",
           "type": "YUE2_ANCHORS",
-          "link": 21
+          "link": 27
         }
       ],
       "outputs": [
@@ -811,7 +1012,7 @@
           "name": "anchors",
           "type": "YUE2_ANCHORS",
           "links": [
-            25
+            31
           ]
         }
       ],
@@ -833,13 +1034,13 @@
         750
       ],
       "flags": {},
-      "order": 17,
+      "order": 23,
       "mode": 0,
       "inputs": [
         {
           "name": "abc",
           "type": "STRING",
-          "link": 22,
+          "link": 28,
           "widget": {
             "name": "abc"
           }
@@ -847,7 +1048,7 @@
         {
           "name": "enabled",
           "type": "BOOLEAN",
-          "link": 23,
+          "link": 29,
           "widget": {
             "name": "enabled"
           }
@@ -858,7 +1059,7 @@
           "name": "anchor",
           "type": "YUE2_MELODY_ANCHOR",
           "links": [
-            24
+            30
           ]
         }
       ],
@@ -895,18 +1096,18 @@
         130
       ],
       "flags": {},
-      "order": 18,
+      "order": 24,
       "mode": 0,
       "inputs": [
         {
           "name": "anchor",
           "type": "YUE2_MELODY_ANCHOR",
-          "link": 24
+          "link": 30
         },
         {
           "name": "previous",
           "type": "YUE2_ANCHORS",
-          "link": 25
+          "link": 31
         }
       ],
       "outputs": [
@@ -914,7 +1115,7 @@
           "name": "anchors",
           "type": "YUE2_ANCHORS",
           "links": [
-            27
+            33
           ]
         }
       ],
@@ -936,7 +1137,7 @@
         750
       ],
       "flags": {},
-      "order": 19,
+      "order": 25,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -944,7 +1145,7 @@
           "name": "anchor",
           "type": "YUE2_MELODY_ANCHOR",
           "links": [
-            26
+            32
           ]
         }
       ],
@@ -981,18 +1182,18 @@
         130
       ],
       "flags": {},
-      "order": 20,
+      "order": 26,
       "mode": 0,
       "inputs": [
         {
           "name": "anchor",
           "type": "YUE2_MELODY_ANCHOR",
-          "link": 26
+          "link": 32
         },
         {
           "name": "previous",
           "type": "YUE2_ANCHORS",
-          "link": 27
+          "link": 33
         }
       ],
       "outputs": [
@@ -1000,7 +1201,7 @@
           "name": "anchors",
           "type": "YUE2_ANCHORS",
           "links": [
-            34
+            40
           ]
         }
       ],
@@ -1022,7 +1223,7 @@
         130
       ],
       "flags": {},
-      "order": 21,
+      "order": 27,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -1030,22 +1231,22 @@
           "name": "MODEL",
           "type": "MODEL",
           "links": [
-            42
+            48
           ]
         },
         {
           "name": "CLIP",
           "type": "CLIP",
           "links": [
-            30,
-            36
+            36,
+            42
           ]
         },
         {
           "name": "VAE",
           "type": "VAE",
           "links": [
-            47
+            53
           ]
         }
       ],
@@ -1068,7 +1269,7 @@
         300
       ],
       "flags": {},
-      "order": 22,
+      "order": 28,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -1076,7 +1277,7 @@
           "name": "STRING",
           "type": "STRING",
           "links": [
-            28
+            34
           ]
         }
       ],
@@ -1100,7 +1301,7 @@
         300
       ],
       "flags": {},
-      "order": 23,
+      "order": 29,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -1108,8 +1309,8 @@
           "name": "STRING",
           "type": "STRING",
           "links": [
-            32,
-            38
+            38,
+            44
           ]
         }
       ],
@@ -1133,13 +1334,13 @@
         230
       ],
       "flags": {},
-      "order": 24,
+      "order": 30,
       "mode": 0,
       "inputs": [
         {
           "name": "string_a",
           "type": "STRING",
-          "link": 28,
+          "link": 34,
           "widget": {
             "name": "string_a"
           }
@@ -1147,7 +1348,7 @@
         {
           "name": "string_b",
           "type": "STRING",
-          "link": 29,
+          "link": 35,
           "widget": {
             "name": "string_b"
           }
@@ -1158,8 +1359,8 @@
           "name": "STRING",
           "type": "STRING",
           "links": [
-            31,
-            37
+            37,
+            43
           ]
         }
       ],
@@ -1185,18 +1386,18 @@
         510
       ],
       "flags": {},
-      "order": 25,
+      "order": 31,
       "mode": 0,
       "inputs": [
         {
           "name": "clip",
           "type": "CLIP",
-          "link": 30
+          "link": 36
         },
         {
           "name": "style",
           "type": "STRING",
-          "link": 31,
+          "link": 37,
           "widget": {
             "name": "style"
           }
@@ -1204,7 +1405,7 @@
         {
           "name": "lyrics",
           "type": "STRING",
-          "link": 32,
+          "link": 38,
           "widget": {
             "name": "lyrics"
           }
@@ -1215,8 +1416,8 @@
           "name": "abc",
           "type": "STRING",
           "links": [
-            33,
-            49
+            39,
+            55
           ]
         }
       ],
@@ -1250,13 +1451,13 @@
         250
       ],
       "flags": {},
-      "order": 26,
+      "order": 32,
       "mode": 0,
       "inputs": [
         {
           "name": "base_abc",
           "type": "STRING",
-          "link": 33,
+          "link": 39,
           "widget": {
             "name": "base_abc"
           }
@@ -1264,7 +1465,7 @@
         {
           "name": "anchors",
           "type": "YUE2_ANCHORS",
-          "link": 34
+          "link": 40
         }
       ],
       "outputs": [
@@ -1272,14 +1473,14 @@
           "name": "final_abc",
           "type": "STRING",
           "links": [
-            55
+            61
           ]
         },
         {
           "name": "composition_report",
           "type": "STRING",
           "links": [
-            50
+            56
           ]
         },
         {
@@ -1311,13 +1512,13 @@
         180
       ],
       "flags": {},
-      "order": 27,
+      "order": 33,
       "mode": 0,
       "inputs": [
         {
           "name": "abc",
           "type": "STRING",
-          "link": 35,
+          "link": 41,
           "widget": {
             "name": "abc"
           }
@@ -1356,18 +1557,18 @@
         540
       ],
       "flags": {},
-      "order": 28,
+      "order": 34,
       "mode": 0,
       "inputs": [
         {
           "name": "clip",
           "type": "CLIP",
-          "link": 36
+          "link": 42
         },
         {
           "name": "style",
           "type": "STRING",
-          "link": 37,
+          "link": 43,
           "widget": {
             "name": "style"
           }
@@ -1375,7 +1576,7 @@
         {
           "name": "lyrics",
           "type": "STRING",
-          "link": 38,
+          "link": 44,
           "widget": {
             "name": "lyrics"
           }
@@ -1383,7 +1584,7 @@
         {
           "name": "abc",
           "type": "STRING",
-          "link": 39,
+          "link": 45,
           "widget": {
             "name": "abc"
           }
@@ -1394,15 +1595,15 @@
           "name": "CONDITIONING",
           "type": "CONDITIONING",
           "links": [
-            41,
-            43
+            47,
+            49
           ]
         },
         {
           "name": "seconds",
           "type": "FLOAT",
           "links": [
-            40
+            46
           ]
         }
       ],
@@ -1437,13 +1638,13 @@
         150
       ],
       "flags": {},
-      "order": 29,
+      "order": 35,
       "mode": 0,
       "inputs": [
         {
           "name": "seconds",
           "type": "FLOAT",
-          "link": 40,
+          "link": 46,
           "widget": {
             "name": "seconds"
           }
@@ -1454,7 +1655,7 @@
           "name": "LATENT",
           "type": "LATENT",
           "links": [
-            45
+            51
           ]
         }
       ],
@@ -1479,13 +1680,13 @@
         110
       ],
       "flags": {},
-      "order": 30,
+      "order": 36,
       "mode": 0,
       "inputs": [
         {
           "name": "conditioning",
           "type": "CONDITIONING",
-          "link": 41
+          "link": 47
         }
       ],
       "outputs": [
@@ -1493,7 +1694,7 @@
           "name": "CONDITIONING",
           "type": "CONDITIONING",
           "links": [
-            44
+            50
           ]
         }
       ],
@@ -1514,28 +1715,28 @@
         370
       ],
       "flags": {},
-      "order": 31,
+      "order": 37,
       "mode": 0,
       "inputs": [
         {
           "name": "model",
           "type": "MODEL",
-          "link": 42
+          "link": 48
         },
         {
           "name": "positive",
           "type": "CONDITIONING",
-          "link": 43
+          "link": 49
         },
         {
           "name": "negative",
           "type": "CONDITIONING",
-          "link": 44
+          "link": 50
         },
         {
           "name": "latent_image",
           "type": "LATENT",
-          "link": 45
+          "link": 51
         }
       ],
       "outputs": [
@@ -1543,7 +1744,7 @@
           "name": "LATENT",
           "type": "LATENT",
           "links": [
-            46
+            52
           ]
         }
       ],
@@ -1572,18 +1773,18 @@
         130
       ],
       "flags": {},
-      "order": 32,
+      "order": 38,
       "mode": 0,
       "inputs": [
         {
           "name": "samples",
           "type": "LATENT",
-          "link": 46
+          "link": 52
         },
         {
           "name": "vae",
           "type": "VAE",
-          "link": 47
+          "link": 53
         }
       ],
       "outputs": [
@@ -1591,7 +1792,7 @@
           "name": "AUDIO",
           "type": "AUDIO",
           "links": [
-            48
+            54
           ]
         }
       ],
@@ -1612,13 +1813,13 @@
         220
       ],
       "flags": {},
-      "order": 33,
+      "order": 39,
       "mode": 0,
       "inputs": [
         {
           "name": "audio",
           "type": "AUDIO",
-          "link": 48
+          "link": 54
         }
       ],
       "outputs": [
@@ -1643,16 +1844,16 @@
       ],
       "size": [
         460,
-        280
+        220
       ],
       "flags": {},
-      "order": 34,
+      "order": 40,
       "mode": 0,
       "inputs": [
         {
           "name": "source",
           "type": "*",
-          "link": 49
+          "link": 55
         }
       ],
       "outputs": [
@@ -1677,16 +1878,16 @@
       ],
       "size": [
         460,
-        280
+        220
       ],
       "flags": {},
-      "order": 35,
+      "order": 41,
       "mode": 0,
       "inputs": [
         {
           "name": "source",
           "type": "*",
-          "link": 50
+          "link": 56
         }
       ],
       "outputs": [
@@ -1707,20 +1908,20 @@
       "type": "PreviewAny",
       "pos": [
         3860,
-        1910
+        1850
       ],
       "size": [
         460,
-        280
+        220
       ],
       "flags": {},
-      "order": 36,
+      "order": 42,
       "mode": 0,
       "inputs": [
         {
           "name": "source",
           "type": "*",
-          "link": 51
+          "link": 57
         }
       ],
       "outputs": [
@@ -1741,20 +1942,20 @@
       "type": "PreviewAny",
       "pos": [
         1100,
-        640
+        1080
       ],
       "size": [
         460,
-        280
+        220
       ],
       "flags": {},
-      "order": 37,
+      "order": 43,
       "mode": 0,
       "inputs": [
         {
           "name": "source",
           "type": "*",
-          "link": 52
+          "link": 58
         }
       ],
       "outputs": [
@@ -1775,20 +1976,20 @@
       "type": "PreviewAny",
       "pos": [
         580,
-        640
+        1080
       ],
       "size": [
         460,
-        280
+        220
       ],
       "flags": {},
-      "order": 38,
+      "order": 44,
       "mode": 0,
       "inputs": [
         {
           "name": "source",
           "type": "*",
-          "link": 53
+          "link": 59
         }
       ],
       "outputs": [
@@ -1809,20 +2010,20 @@
       "type": "PreviewAny",
       "pos": [
         1620,
-        640
+        1080
       ],
       "size": [
         460,
-        280
+        220
       ],
       "flags": {},
-      "order": 39,
+      "order": 45,
       "mode": 0,
       "inputs": [
         {
           "name": "source",
           "type": "*",
-          "link": 54
+          "link": 60
         }
       ],
       "outputs": [
@@ -1850,13 +2051,13 @@
         980
       ],
       "flags": {},
-      "order": 40,
+      "order": 46,
       "mode": 0,
       "inputs": [
         {
           "name": "source_abc",
           "type": "STRING",
-          "link": 55
+          "link": 61
         }
       ],
       "outputs": [
@@ -1864,9 +2065,9 @@
           "name": "edited_abc",
           "type": "STRING",
           "links": [
-            35,
-            39,
-            51
+            41,
+            45,
+            57
           ]
         }
       ],
@@ -1887,10 +2088,18 @@
       0,
       3,
       0,
-      "STRING"
+      "AUDIO_ENCODER"
     ],
     [
       2,
+      1,
+      0,
+      3,
+      1,
+      "AUDIO"
+    ],
+    [
+      3,
       3,
       0,
       4,
@@ -1898,15 +2107,31 @@
       "STRING"
     ],
     [
-      3,
+      4,
+      45,
+      0,
+      4,
+      1,
+      "BOOLEAN"
+    ],
+    [
+      5,
       2,
       0,
       28,
       0,
-      "STRING"
+      "AUDIO_ENCODER"
     ],
     [
-      4,
+      6,
+      27,
+      0,
+      28,
+      1,
+      "AUDIO"
+    ],
+    [
+      7,
       28,
       0,
       29,
@@ -1914,15 +2139,31 @@
       "STRING"
     ],
     [
-      5,
+      8,
+      46,
+      0,
+      29,
+      1,
+      "BOOLEAN"
+    ],
+    [
+      9,
       2,
       0,
       33,
       0,
-      "STRING"
+      "AUDIO_ENCODER"
     ],
     [
-      6,
+      10,
+      32,
+      0,
+      33,
+      1,
+      "AUDIO"
+    ],
+    [
+      11,
       33,
       0,
       34,
@@ -1930,7 +2171,15 @@
       "STRING"
     ],
     [
-      7,
+      12,
+      47,
+      0,
+      34,
+      1,
+      "BOOLEAN"
+    ],
+    [
+      13,
       4,
       0,
       22,
@@ -1938,7 +2187,7 @@
       "YUE2_HUM_ANALYSIS"
     ],
     [
-      8,
+      14,
       4,
       0,
       23,
@@ -1946,7 +2195,7 @@
       "YUE2_HUM_ANALYSIS"
     ],
     [
-      9,
+      15,
       22,
       0,
       23,
@@ -1954,7 +2203,7 @@
       "YUE2_KEY_CANDIDATES"
     ],
     [
-      10,
+      16,
       22,
       1,
       24,
@@ -1962,7 +2211,7 @@
       "STRING"
     ],
     [
-      11,
+      17,
       23,
       1,
       25,
@@ -1970,7 +2219,7 @@
       "STRING"
     ],
     [
-      12,
+      18,
       29,
       2,
       30,
@@ -1978,15 +2227,15 @@
       "STRING"
     ],
     [
-      13,
-      28,
-      1,
+      19,
+      46,
+      0,
       30,
       1,
       "BOOLEAN"
     ],
     [
-      14,
+      20,
       30,
       0,
       31,
@@ -1994,7 +2243,7 @@
       "YUE2_MELODY_ANCHOR"
     ],
     [
-      15,
+      21,
       4,
       2,
       5,
@@ -2002,15 +2251,15 @@
       "STRING"
     ],
     [
-      16,
-      3,
-      1,
+      22,
+      45,
+      0,
       5,
       1,
       "BOOLEAN"
     ],
     [
-      17,
+      23,
       5,
       0,
       6,
@@ -2018,7 +2267,7 @@
       "YUE2_MELODY_ANCHOR"
     ],
     [
-      18,
+      24,
       31,
       0,
       6,
@@ -2026,15 +2275,15 @@
       "YUE2_ANCHORS"
     ],
     [
-      19,
-      3,
-      1,
+      25,
+      45,
+      0,
       37,
       0,
       "BOOLEAN"
     ],
     [
-      20,
+      26,
       37,
       0,
       38,
@@ -2042,7 +2291,7 @@
       "YUE2_MELODY_ANCHOR"
     ],
     [
-      21,
+      27,
       6,
       0,
       38,
@@ -2050,7 +2299,7 @@
       "YUE2_ANCHORS"
     ],
     [
-      22,
+      28,
       34,
       2,
       35,
@@ -2058,15 +2307,15 @@
       "STRING"
     ],
     [
-      23,
-      33,
-      1,
+      29,
+      47,
+      0,
       35,
       1,
       "BOOLEAN"
     ],
     [
-      24,
+      30,
       35,
       0,
       36,
@@ -2074,7 +2323,7 @@
       "YUE2_MELODY_ANCHOR"
     ],
     [
-      25,
+      31,
       38,
       0,
       36,
@@ -2082,7 +2331,7 @@
       "YUE2_ANCHORS"
     ],
     [
-      26,
+      32,
       39,
       0,
       40,
@@ -2090,7 +2339,7 @@
       "YUE2_MELODY_ANCHOR"
     ],
     [
-      27,
+      33,
       36,
       0,
       40,
@@ -2098,7 +2347,7 @@
       "YUE2_ANCHORS"
     ],
     [
-      28,
+      34,
       20,
       0,
       26,
@@ -2106,7 +2355,7 @@
       "STRING"
     ],
     [
-      29,
+      35,
       23,
       1,
       26,
@@ -2114,7 +2363,7 @@
       "STRING"
     ],
     [
-      30,
+      36,
       7,
       1,
       8,
@@ -2122,7 +2371,7 @@
       "CLIP"
     ],
     [
-      31,
+      37,
       26,
       0,
       8,
@@ -2130,7 +2379,7 @@
       "STRING"
     ],
     [
-      32,
+      38,
       21,
       0,
       8,
@@ -2138,7 +2387,7 @@
       "STRING"
     ],
     [
-      33,
+      39,
       8,
       0,
       9,
@@ -2146,7 +2395,7 @@
       "STRING"
     ],
     [
-      34,
+      40,
       40,
       0,
       9,
@@ -2154,7 +2403,7 @@
       "YUE2_ANCHORS"
     ],
     [
-      35,
+      41,
       44,
       0,
       10,
@@ -2162,7 +2411,7 @@
       "STRING"
     ],
     [
-      36,
+      42,
       7,
       1,
       11,
@@ -2170,7 +2419,7 @@
       "CLIP"
     ],
     [
-      37,
+      43,
       26,
       0,
       11,
@@ -2178,7 +2427,7 @@
       "STRING"
     ],
     [
-      38,
+      44,
       21,
       0,
       11,
@@ -2186,7 +2435,7 @@
       "STRING"
     ],
     [
-      39,
+      45,
       44,
       0,
       11,
@@ -2194,7 +2443,7 @@
       "STRING"
     ],
     [
-      40,
+      46,
       11,
       1,
       12,
@@ -2202,7 +2451,7 @@
       "FLOAT"
     ],
     [
-      41,
+      47,
       11,
       0,
       13,
@@ -2210,7 +2459,7 @@
       "CONDITIONING"
     ],
     [
-      42,
+      48,
       7,
       0,
       14,
@@ -2218,7 +2467,7 @@
       "MODEL"
     ],
     [
-      43,
+      49,
       11,
       0,
       14,
@@ -2226,7 +2475,7 @@
       "CONDITIONING"
     ],
     [
-      44,
+      50,
       13,
       0,
       14,
@@ -2234,7 +2483,7 @@
       "CONDITIONING"
     ],
     [
-      45,
+      51,
       12,
       0,
       14,
@@ -2242,7 +2491,7 @@
       "LATENT"
     ],
     [
-      46,
+      52,
       14,
       0,
       15,
@@ -2250,7 +2499,7 @@
       "LATENT"
     ],
     [
-      47,
+      53,
       7,
       2,
       15,
@@ -2258,7 +2507,7 @@
       "VAE"
     ],
     [
-      48,
+      54,
       15,
       0,
       16,
@@ -2266,7 +2515,7 @@
       "AUDIO"
     ],
     [
-      49,
+      55,
       8,
       0,
       17,
@@ -2274,7 +2523,7 @@
       "STRING"
     ],
     [
-      50,
+      56,
       9,
       1,
       18,
@@ -2282,7 +2531,7 @@
       "STRING"
     ],
     [
-      51,
+      57,
       44,
       0,
       19,
@@ -2290,7 +2539,7 @@
       "STRING"
     ],
     [
-      52,
+      58,
       4,
       1,
       41,
@@ -2298,7 +2547,7 @@
       "STRING"
     ],
     [
-      53,
+      59,
       29,
       1,
       42,
@@ -2306,7 +2555,7 @@
       "STRING"
     ],
     [
-      54,
+      60,
       34,
       1,
       43,
@@ -2314,7 +2563,7 @@
       "STRING"
     ],
     [
-      55,
+      61,
       9,
       0,
       44,
@@ -2329,19 +2578,19 @@
         40,
         60,
         520,
-        630
+        460
       ],
       "color": "#3f6377",
       "font_size": 24,
       "flags": {}
     },
     {
-      "title": "02 오디오 선택사항 · 비워두면 AI 원본 유지",
+      "title": "02 오디오 선택사항 · BOOL false = AI 원본 유지",
       "bounding": [
         560,
         60,
         1560,
-        930
+        1310
       ],
       "color": "#3f6377",
       "font_size": 24,
@@ -2353,7 +2602,7 @@
         560,
         1500,
         1040,
-        760
+        700
       ],
       "color": "#79623c",
       "font_size": 24,
@@ -2365,7 +2614,7 @@
         2160,
         1500,
         1040,
-        1290
+        1230
       ],
       "color": "#79623c",
       "font_size": 24,
@@ -2389,7 +2638,7 @@
         3320,
         1500,
         1040,
-        760
+        640
       ],
       "color": "#3c7152",
       "font_size": 24,

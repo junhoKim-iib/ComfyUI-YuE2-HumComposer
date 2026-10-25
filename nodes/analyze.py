@@ -13,10 +13,12 @@ class HumMelodyAnalyze:
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         return {'required': {'abc': ('STRING',{'multiline':True}),
-                             'voice': (['auto','Vocal','Ins'],)}}
+                             'voice': (['auto','Vocal','Ins'],)},
+                'optional': {'enabled': ('BOOLEAN', {'default': True,
+                    'tooltip': 'Use this melody. False skips upstream audio validation and transcription.'})}}
 
-    def analyze(self, abc: str, voice: str = 'auto') -> tuple:
-        if not abc.strip():
+    def analyze(self, abc: str, voice: str = 'auto', enabled: bool = True) -> tuple:
+        if not enabled or not abc.strip():
             return None,'No melody input; the generated base plan is retained.',''
         analysis = analyze_melody(abc,voice)
         return analysis,analysis_report(analysis),serialize(analysis.score)

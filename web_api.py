@@ -5,6 +5,7 @@ import sys
 
 from .humcomposer.abc.editing import paint_interval, edit_chord, append_measure, add_voice
 from .nodes.score import _preview
+from .nodes.optional_audio import prepare_optional_audio
 
 
 def _time(data, key):
@@ -48,6 +49,7 @@ def register_routes() -> None:
     server = sys.modules.get('server')
     if server is None or not hasattr(server.PromptServer, 'instance'):
         return
+    server.PromptServer.instance.add_on_prompt_handler(prepare_optional_audio)
     from aiohttp import web
 
     @server.PromptServer.instance.routes.post('/humcomposer/score')
