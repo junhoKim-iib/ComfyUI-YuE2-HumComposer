@@ -1,6 +1,6 @@
 {
-  "last_node_id": 43,
-  "last_link_id": 53,
+  "last_node_id": 44,
+  "last_link_id": 54,
   "nodes": [
     {
       "id": 1,
@@ -1306,7 +1306,8 @@
           "links": [
             34,
             38,
-            50
+            50,
+            54
           ]
         },
         {
@@ -1871,6 +1872,34 @@
       },
       "widgets_values": [],
       "title": "Bridge 분석 보고서"
+    },
+    {
+      "id": 44,
+      "type": "YuE2ABCScoreViewer",
+      "pos": [
+        3340,
+        2560
+      ],
+      "size": [
+        980,
+        600
+      ],
+      "flags": {},
+      "order": 43,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "abc",
+          "type": "STRING",
+          "link": 54
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "YuE2ABCScoreViewer"
+      },
+      "widgets_values": [],
+      "title": "최종 오선 악보 · 성부 선택 / 확대 / SVG 저장"
     }
   ],
   "links": [
@@ -2297,6 +2326,14 @@
       43,
       0,
       "STRING"
+    ],
+    [
+      54,
+      9,
+      0,
+      44,
+      0,
+      "STRING"
     ]
   ],
   "groups": [
@@ -2381,6 +2418,18 @@
         990
       ],
       "color": "#754c4c",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "08 최종 ABC 오선 악보",
+      "bounding": [
+        3320,
+        2500,
+        1040,
+        730
+      ],
+      "color": "#3c7152",
       "font_size": 24,
       "flags": {}
     }
