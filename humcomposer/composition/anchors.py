@@ -45,7 +45,8 @@ class MelodyAnchor:
             raise ValueError('Active anchor needs ABC or an explicit source anchor ID')
 
 
-def append_anchor(anchor: MelodyAnchor, previous: tuple[MelodyAnchor, ...] = ()) -> tuple[MelodyAnchor, ...]:
-    if not isinstance(anchor,MelodyAnchor) or not isinstance(previous,tuple) or not all(isinstance(a,MelodyAnchor) for a in previous):
+def append_anchor(anchor: MelodyAnchor | None, previous: tuple[MelodyAnchor, ...] = ()) -> tuple[MelodyAnchor, ...]:
+    if (anchor is not None and not isinstance(anchor,MelodyAnchor) or
+            not isinstance(previous,tuple) or not all(isinstance(a,MelodyAnchor) for a in previous)):
         raise TypeError('Expected MelodyAnchor and an anchor collection')
-    return previous+(anchor,)
+    return previous if anchor is None else previous+(anchor,)

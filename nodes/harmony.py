@@ -25,6 +25,8 @@ class ChordProgressionRecommend:
     def recommend(self, analysis, selected_key: str = 'auto', selected_mode: str = 'auto',
                   bars: int = 4, complexity: str = 'triads', candidate_count: int = 3,
                   candidate_index: int = 1, candidates=None) -> tuple:
+        if analysis is None:
+            return (),''
         if selected_key.strip()=='auto' or selected_mode=='auto':
             choices = candidates if candidates is not None else rank_keys(analysis,True,84)
             if not 1<=candidate_index<=len(choices):

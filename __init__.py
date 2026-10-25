@@ -6,6 +6,7 @@ from .nodes.compose import HumSongComposer
 from .nodes.validation import ABCValidate
 from .nodes.score import ABCScoreViewer
 from .nodes.editor import ABCScoreEditor
+from .nodes.optional_audio import OptionalAudioToABC
 from .web_api import register_routes
 
 WEB_DIRECTORY = './web'
@@ -21,6 +22,7 @@ NODE_CLASS_MAPPINGS = {
     'YuE2ABCValidate': ABCValidate,
     'YuE2ABCScoreViewer': ABCScoreViewer,
     'YuE2ABCScoreEditor': ABCScoreEditor,
+    'YuE2OptionalAudioToABC': OptionalAudioToABC,
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
     'YuE2HumMelodyAnalyze': 'YuE2 Hum Melody Analyze',
@@ -32,4 +34,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     'YuE2ABCValidate': 'YuE2 ABC Validate',
     'YuE2ABCScoreViewer': 'YuE2 ABC Score Viewer',
     'YuE2ABCScoreEditor': 'YuE2 ABC Score Editor',
+    'YuE2OptionalAudioToABC': 'YuE2 Optional Audio to ABC',
 }

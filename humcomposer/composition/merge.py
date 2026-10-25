@@ -214,10 +214,12 @@ def compose_song(base_abc: str, anchors: tuple[MelodyAnchor, ...], global_key: s
         raise TypeError('Expected an anchor collection')
     base = parse_abc(base_abc)
     require_valid(base,native=True)
-    if not any(s.name!='unsectioned' for s in base.sections):
+    if anchors and not any(s.name!='unsectioned' for s in base.sections):
         raise ValueError('Base plan needs named sections from a complete YuE2 ABC plan')
     key = parse_key(global_key) if global_key.strip() else None
     report = ['GLOBAL KEY: '+(key.text if key else 'base local keys'), 'ANCHORS']
+    if not anchors:
+        report.append('No active melody anchors; base plan unchanged.')
     warnings: list[str] = [i.message for i in validate_score(base,native=True) if i.severity=='warning']
     edits = {}
     expected: dict[tuple[str,int],tuple[Tone, ...]] = {}

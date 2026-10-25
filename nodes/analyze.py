@@ -16,6 +16,8 @@ class HumMelodyAnalyze:
                              'voice': (['auto','Vocal','Ins'],)}}
 
     def analyze(self, abc: str, voice: str = 'auto') -> tuple:
+        if not abc.strip():
+            return None,'No melody input; the generated base plan is retained.',''
         analysis = analyze_melody(abc,voice)
         return analysis,analysis_report(analysis),serialize(analysis.score)
 
@@ -33,5 +35,7 @@ class KeyModeCandidates:
                              'candidate_count': ('INT',{'default':5,'min':1,'max':84})}}
 
     def recommend(self, analysis, include_modes: bool = False, candidate_count: int = 5) -> tuple:
+        if analysis is None:
+            return (),'No melody input; no key or mode candidates.'
         candidates = rank_keys(analysis,include_modes,candidate_count)
         return candidates,key_report(candidates)
