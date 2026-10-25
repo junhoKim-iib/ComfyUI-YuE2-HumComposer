@@ -2,7 +2,7 @@
 from fractions import Fraction
 import re
 
-from ..humcomposer.abc.model import ChordSymbol, Note, Rest
+from ..humcomposer.abc.model import ChordSymbol, Note, NoteStack, Rest
 from ..humcomposer.abc.parser import ABCParseError, parse_abc
 from ..humcomposer.abc.validation import validate_score
 from .analyze import CATEGORY
@@ -29,14 +29,24 @@ def _ratio(value: Fraction) -> list[int]:
 
 def _roll_tones(bar) -> list[dict]:
     tones = []
+    active = {}
     for event in bar.events:
-        if not isinstance(event, (Note, Rest)):
-            continue
-        if isinstance(event, Note) and event.tie_from_previous and tones and tones[-1]['midi'] == event.midi:
-            tones[-1]['duration'] = _ratio(Fraction(*tones[-1]['duration']) + event.duration)
-        else:
+        if isinstance(event, Rest):
             tones.append({'offset': _ratio(event.onset - bar.onset), 'duration': _ratio(event.duration),
-                          'midi': event.midi if isinstance(event, Note) else None})
+                          'midi': None})
+            active = {}
+        elif isinstance(event, (Note, NoteStack)):
+            pending = {}
+            for note in event.notes if isinstance(event, NoteStack) else (event,):
+                if note.tie_from_previous and note.midi in active:
+                    index = active[note.midi]
+                    tones[index]['duration'] = _ratio(Fraction(*tones[index]['duration']) + note.duration)
+                else:
+                    index = len(tones)
+                    tones.append({'offset': _ratio(note.onset - bar.onset), 'duration': _ratio(note.duration), 'midi': note.midi})
+                if note.tie_to_next:
+                    pending[note.midi] = index
+            active = pending
     return tones
 
 
@@ -61,7 +71,7 @@ def _voice_metadata(score, voice_id: str) -> tuple[str, str]:
 
 
 def _preview(abc: str) -> dict:
-    score = parse_abc(abc)
+    score = parse_abc(abc, polyphonic=True)
     if not any(voice.measures for voice in score.voices):
         raise ValueError('No musical events found')
     messages = [f'{issue.severity.upper()} [{issue.code}] {issue.message}'
@@ -88,7 +98,8 @@ def _preview(abc: str) -> dict:
                     events.append((change.onset, change.span.start, change))
                 index += 1
             change_index = index
-            events.extend((e.onset, e.span.start, e) for e in bar.events)
+            events.extend((item.onset, item.span.start, item) for event in bar.events
+                          for item in (event.notes if isinstance(event, NoteStack) else (event,)))
             display = []
             for onset, _, event in sorted(events, key=lambda item: item[:2]):
                 offset = onset - bar.onset

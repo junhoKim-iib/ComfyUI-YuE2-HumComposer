@@ -7,6 +7,7 @@ const ratio = (n, d = 1) => { const g = gcd(n, d); return [n / g, d / g]; };
 const add = (a, b) => ratio(a[0] * b[1] + b[0] * a[1], a[1] * b[1]);
 const names = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'];
 const pitchName = (midi) => names[midi % 12] + (Math.floor(midi / 12) - 1);
+const computerKeys = 'awsedftgyhujk';
 
 export function createScoreEditor({ initialAbc, request, onChange, followInput, setFollowInput }) {
     const element = document.createElement('div');
@@ -46,10 +47,13 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
     const stop = html('button', toolbar, '정지');
     const controls = html('div', root, undefined, 'toolbar');
     const voices = html('select', controls); voices.setAttribute('aria-label', '편집 성부');
+    const addPart = html('button', controls, '성부 추가');
     html('span', controls, '마디');
     const measure = html('input', controls); measure.type = 'number'; measure.min = '1'; measure.value = '1';
     measure.setAttribute('aria-label', '편집 마디');
     const append = html('button', controls, '마디 추가');
+    html('span', controls, '입력 시작');
+    const position = html('select', controls); position.setAttribute('aria-label', '입력 시작 위치');
     const grid = html('select', controls); grid.setAttribute('aria-label', '입력 격자');
     for (const denominator of [4, 8, 16, 32]) html('option', grid, `1/${denominator} 격자`).value = denominator;
     grid.value = '16';
@@ -61,6 +65,15 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
     const noteUp = html('button', controls, '반음 +');
     const resize = html('button', controls, '길이 적용');
     const erase = html('button', controls, '쉼표 / 삭제');
+    const partTools = html('div', root, undefined, 'toolbar');
+    const partName = html('input', partTools); partName.placeholder = '새 성부 이름'; partName.maxLength = 64;
+    partName.setAttribute('aria-label', '새 성부 이름');
+    const partClef = html('select', partTools); partClef.setAttribute('aria-label', '새 성부 음자리표');
+    html('option', partClef, '높은음자리표').value = 'treble';
+    html('option', partClef, '낮은음자리표').value = 'bass';
+    const playback = html('select', partTools); playback.setAttribute('aria-label', '재생 성부');
+    html('option', playback, '모든 성부 함께 재생').value = 'all';
+    html('option', playback, '선택한 성부만 재생').value = 'selected';
     const chordTools = html('div', root, undefined, 'toolbar');
     const selectionText = html('span', chordTools, '음표 또는 피아노 롤의 위치를 선택하세요.', 'selection');
     const chord = html('input', chordTools); chord.placeholder = 'C, Am7…'; chord.maxLength = 128;
@@ -74,13 +87,20 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
     const keyboardBar = html('div', root, undefined, 'toolbar');
     const octaveDown = html('button', keyboardBar, '옥타브 −');
     const octaveUp = html('button', keyboardBar, '옥타브 +');
+    html('span', keyboardBar, 'PC 첫 음 (A)');
+    const firstPitch = html('select', keyboardBar); firstPitch.setAttribute('aria-label', 'PC 키보드 첫 음');
+    for (let midi = 0; midi <= 115; midi++) html('option', firstPitch, pitchName(midi)).value = midi;
+    firstPitch.value = '60';
+    const overlapLabel = html('label', keyboardBar, undefined, 'check');
+    const overlap = html('input', overlapLabel); overlap.type = 'checkbox'; overlap.checked = true;
+    overlapLabel.append(document.createTextNode('화음 겹치기'));
     const inputLabel = html('label', keyboardBar, undefined, 'check');
     const inputEnabled = html('input', inputLabel); inputEnabled.type = 'checkbox'; inputEnabled.checked = true;
     inputLabel.append(document.createTextNode('건반으로 입력'));
     const advanceLabel = html('label', keyboardBar, undefined, 'check');
     const advance = html('input', advanceLabel); advance.type = 'checkbox'; advance.checked = true;
     advanceLabel.append(document.createTextNode('입력 후 이동'));
-    html('span', keyboardBar, 'A W S E D F T G Y H U J K · 단선율 구간 덮어쓰기', 'hint');
+    html('span', keyboardBar, 'A W S E D F T G Y H U J K · 여러 키를 함께 누르면 화음', 'hint');
     const keyboard = html('div', root, undefined, 'keyboard');
     const details = html('details', root, undefined, 'abc-panel');
     html('summary', details, 'ABC 직접 편집 · 변경 즉시 반영 / 워크플로에 저장');
@@ -108,6 +128,8 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
     let lastAudition;
     let dialog;
     let placeholder;
+    const pressedKeys = new Set();
+    let keyboardEntry;
 
     function closeDialog() {
         if (!dialog) return;
@@ -149,7 +171,7 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
     function focusSelection(next) {
         if (next && payload) {
             const bar = payload.voices.find((v) => v.id === next.voice)?.measures[next.measure];
-            const tone = bar?.tones.find((t) => value(t.offset) <= value(next.offset) &&
+            const tone = bar?.tones.find((t) => t.midi === next.midi && value(t.offset) <= value(next.offset) &&
                 value(next.offset) < value(add(t.offset, t.duration)));
             if (tone) next = { ...next, ...tone };
         }
@@ -157,13 +179,14 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
         if (next) {
             voices.value = next.voice; measure.value = next.measure + 1; cursor = next.offset;
             if (next.midi !== null && (next.midi < basePitch || next.midi >= basePitch + 36)) {
-                basePitch = Math.max(0, Math.min(92, Math.floor(next.midi / 12) * 12 - 12));
+                basePitch = Math.max(0, Math.min(96, Math.floor(next.midi / 12) * 12 - 12));
                 drawKeyboard();
             }
         }
         const name = next?.midi !== null && next?.midi !== undefined ? pitchName(next.midi) : '쉼표 / 입력 위치';
         selectionText.textContent = `${measure.value}마디 · ${name} · 위치 ${cursor.join('/')} (온음표 기준)`;
         const bar = currentBar();
+        drawPosition();
         chord.value = bar?.events.find((e) => e.kind === 'chord' && value(e.offset) === value(cursor))?.text ?? '';
         view.focus(next ?? (payload && { voice: voices.value, measure: Number(measure.value) - 1, offset: cursor })); drawRoll();
     }
@@ -182,12 +205,12 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
         if (value(cursor) > value(bar.duration)) cursor = bar.duration;
         view.update([next]);
         if (selected && selected.voice === voices.value && selected.measure === Number(measure.value) - 1) {
-            const tone = bar.tones.find((e) => value(e.offset) === value(selected.offset));
+            const tone = bar.tones.find((e) => e.midi === selected.midi && value(e.offset) === value(selected.offset));
             selected = tone ? { ...selected, ...tone } : undefined;
         } else selected = undefined;
         focusSelection(selected);
         const errors = next.messages.filter((m) => m.startsWith('ERROR'));
-        for (const button of [append, noteDown, noteUp, resize, erase, applyChord]) button.disabled = Boolean(errors.length);
+        for (const button of [append, addPart, noteDown, noteUp, resize, erase, applyChord]) button.disabled = Boolean(errors.length);
         message(errors.length ? errors.join(' · ') : '편집본 반영됨 · 워크플로 저장 시 함께 보관 · 건반 / 롤 클릭 입력 · 드래그 이동 · 오른쪽 클릭 삭제', Boolean(errors.length));
         updateMode();
     }
@@ -208,6 +231,7 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
     }
     function cancelPending() {
         epoch++; revision++; clearTimeout(timer); controller?.abort();
+        pressedKeys.clear(); keyboardEntry = undefined;
     }
     function enqueue(operation, after) {
         setFollowInput(false); updateMode();
@@ -232,34 +256,62 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
         const bar = payload?.voices.find((v) => v.id === target.voice)?.measures[target.measure];
         if (!bar || value(at) >= value(bar.duration)) { message('마디 끝입니다. 다음 마디를 선택하거나 마디를 추가하세요.'); return null; }
         const remaining = add(bar.duration, [-at[0], at[1]]);
-        return { action: 'paint', voice: target.voice, measure: target.measure,
+        return { action: overlap.checked ? 'add' : 'paint', voice: target.voice, measure: target.measure,
             offset: at, duration: value(length) <= value(remaining) ? length : remaining, midi };
+    }
+    function advanceCursor(action) {
+        selected = undefined;
+        if (advance.checked) {
+            voices.value = action.voice; measure.value = action.measure + 1;
+            measure.max = currentVoice().measures.length;
+            cursor = add(action.offset, action.duration);
+            if (value(cursor) >= value(currentBar().duration) && Number(measure.value) < Number(measure.max)) {
+                measure.value = Number(measure.value) + 1; cursor = [0, 1];
+            }
+        }
+        focusSelection(undefined);
     }
     function enterPitch(midi) {
         sound(midi);
         if (!inputEnabled.checked) return;
         let action;
         enqueue(() => { action = paintAction(midi); return action; }, () => {
-            selected = undefined;
-            if (advance.checked) {
-                cursor = add(action.offset, action.duration);
-                if (value(cursor) >= value(currentBar().duration) && Number(measure.value) < Number(measure.max)) {
-                    measure.value = Number(measure.value) + 1; cursor = [0, 1];
-                }
-            }
-            focusSelection(undefined);
+            advanceCursor(action);
         });
     }
     function changePitch(delta) {
         if (selected?.midi === null || !selected) return;
         const target = { ...selected };
         sound(Math.max(0, Math.min(127, target.midi + delta)));
+        let action;
         enqueue(() => {
             const tone = payload?.voices.find((v) => v.id === target.voice)?.measures[target.measure].tones
                 .find((t) => value(t.offset) === value(target.offset));
             const midi = (tone?.midi ?? target.midi) + delta;
-            return midi >= 0 && midi <= 127 ? paintAction(midi, target.offset, target.duration, target) : null;
-        });
+            const painted = midi >= 0 && midi <= 127 ? paintAction(midi, target.offset, target.duration, target) : null;
+            action = painted && { ...painted, action: 'move', additive: true,
+                oldOffset: target.offset, oldDuration: target.duration, erasePitch: tone?.midi ?? target.midi };
+            return action;
+        }, () => focusSelection(action));
+    }
+
+    function drawPosition() {
+        position.replaceChildren();
+        const bar = currentBar();
+        if (!bar) return;
+        const unit = Number(grid.value);
+        const points = Array.from({ length: Math.min(256, Math.ceil(value(bar.duration) * unit)) }, (_, index) => ratio(index, unit));
+        if (!points.some((point) => value(point) === value(cursor))) points.push(cursor);
+        points.sort((a, b) => value(a) - value(b));
+        for (const point of points) {
+            const beat = ratio(point[0] * bar.meter[1], point[1]);
+            const whole = Math.floor(value(beat));
+            const remainder = ratio(beat[0] - whole * beat[1], beat[1]);
+            const label = value(point) === value(bar.duration) ? '마디 끝' :
+                `${whole + 1}박${remainder[0] ? ` + ${remainder.join('/')}` : ''}`;
+            html('option', position, label).value = point.join('/');
+        }
+        position.value = cursor.join('/');
     }
 
     function makeSvg(parent, tag, attrs, content) {
@@ -269,6 +321,8 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
         parent.append(el); return el;
     }
     function drawRoll() {
+        const scrollTop = roll.scrollTop;
+        const scrollLeft = roll.scrollLeft;
         roll.replaceChildren();
         const bar = currentBar();
         if (!bar) return;
@@ -276,22 +330,24 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
         const columns = Math.ceil(value(bar.duration) * unit);
         if (columns > 256) { html('p', roll, '이 마디는 격자가 너무 큽니다. 더 큰 입력 격자를 선택하세요.'); return; }
         const width = 64 + columns * 32;
-        const rootSvg = makeSvg(roll, 'svg', { width, height: 528, viewBox: `0 0 ${width} 528`, role: 'group', 'aria-label': '피아노 롤 입력 격자' });
-        for (let row = 0; row < 36; row++) {
-            const midi = basePitch + 35 - row;
+        const rows = Math.min(36, 128 - basePitch);
+        const height = 24 + rows * 14;
+        const rootSvg = makeSvg(roll, 'svg', { width, height, viewBox: `0 0 ${width} ${height}`, role: 'group', 'aria-label': '피아노 롤 입력 격자' });
+        for (let row = 0; row < rows; row++) {
+            const midi = basePitch + rows - 1 - row;
             const black = [1, 3, 6, 8, 10].includes(midi % 12);
             makeSvg(rootSvg, 'rect', { x: 0, y: 24 + row * 14, width, height: 14, fill: black ? '#e7edf4' : '#fff', stroke: '#dce4ee', 'stroke-width': .5 });
             makeSvg(rootSvg, 'text', { x: 5, y: 35 + row * 14, fill: '#41556c', 'font-size': 9 }, pitchName(midi));
         }
         for (let col = 0; col <= columns; col++) {
             const x = 64 + col * 32;
-            makeSvg(rootSvg, 'line', { x1: x, x2: x, y1: 24, y2: 528, stroke: col % (unit / bar.meter[1]) === 0 ? '#a6b6c9' : '#d7e0eb' });
+            makeSvg(rootSvg, 'line', { x1: x, x2: x, y1: 24, y2: height, stroke: col % (unit / bar.meter[1]) === 0 ? '#a6b6c9' : '#d7e0eb' });
             if (col < columns) makeSvg(rootSvg, 'text', { x: x + 3, y: 16, fill: '#536a83', 'font-size': 10 }, `${col + 1}`);
         }
         for (const tone of bar.tones.filter((e) => e.midi !== null && e.midi >= basePitch && e.midi < basePitch + 36)) {
             const x = 64 + value(tone.offset) * unit * 32;
-            const active = selected && value(selected.offset) === value(tone.offset);
-            const rect = makeSvg(rootSvg, 'rect', { x, y: 25 + (basePitch + 35 - tone.midi) * 14,
+            const active = selected && selected.midi === tone.midi && value(selected.offset) === value(tone.offset);
+            const rect = makeSvg(rootSvg, 'rect', { x, y: 25 + (basePitch + rows - 1 - tone.midi) * 14,
                 width: Math.max(3, value(tone.duration) * unit * 32 - 2), height: 12, rx: 2,
                 fill: active ? '#184e9c' : '#3b82c4', 'data-roll-note': '',
                 'data-offset': tone.offset.join('/'), 'data-duration': tone.duration.join('/'), 'data-midi': tone.midi,
@@ -299,13 +355,13 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
             makeSvg(rect, 'title', {}, `${pitchName(tone.midi)} · 드래그 이동 / 오른쪽 가장자리로 길이 조절`);
         }
         const cursorX = 64 + value(cursor) * unit * 32;
-        makeSvg(rootSvg, 'line', { x1: cursorX, x2: cursorX, y1: 24, y2: 528, stroke: '#e06e25', 'stroke-width': 2, 'pointer-events': 'none' });
+        makeSvg(rootSvg, 'line', { x1: cursorX, x2: cursorX, y1: 24, y2: height, stroke: '#e06e25', 'stroke-width': 2, 'pointer-events': 'none' });
         let dragging;
         const position = (event) => {
             const point = rootSvg.createSVGPoint(); point.x = event.clientX; point.y = event.clientY;
             const local = point.matrixTransform(rootSvg.getScreenCTM().inverse());
             return { col: Math.max(0, Math.min(columns - 1, Math.floor((local.x - 64) / 32))),
-                midi: basePitch + 35 - Math.max(0, Math.min(35, Math.floor((local.y - 24) / 14))), x: local.x };
+                midi: basePitch + rows - 1 - Math.max(0, Math.min(rows - 1, Math.floor((local.y - 24) / 14))), x: local.x };
         };
         rootSvg.addEventListener('contextmenu', (event) => event.preventDefault());
         rootSvg.addEventListener('pointerdown', (event) => {
@@ -326,13 +382,15 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
             if (drag.original) {
                 const sel = { ...drag.original, voice: voices.value, measure: Number(measure.value) - 1 };
                 focusSelection(sel); sound(sel.midi);
-                if (drag.erase) enqueue(() => paintAction(null, sel.offset, sel.duration));
+                if (drag.erase) enqueue(() => ({ ...paintAction(null, sel.offset, sel.duration, sel),
+                    action: 'erase', erasePitch: sel.midi }));
                 else if (moved) {
                     const offset = drag.resize ? sel.offset : ratio(pos.col, unit);
                     const difference = add(ratio(pos.col + 1, unit), [-sel.offset[0], sel.offset[1]]);
                     const length = drag.resize ? (value(difference) > 0 ? difference : [1, unit]) : sel.duration;
                     const action = paintAction(drag.resize ? sel.midi : pos.midi, offset, length);
-                    if (action) enqueue(() => ({ ...action, action: 'move', oldOffset: sel.offset, oldDuration: sel.duration }),
+                    if (action) enqueue(() => ({ ...action, action: 'move', additive: true, erasePitch: sel.midi,
+                        oldOffset: sel.offset, oldDuration: sel.duration }),
                         () => focusSelection({ ...action }));
                 }
             } else {
@@ -342,21 +400,30 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
             }
         });
         rootSvg.addEventListener('pointercancel', () => { dragging = null; });
+        roll.scrollTop = scrollTop; roll.scrollLeft = scrollLeft;
     }
 
     function drawKeyboard() {
         keyboard.replaceChildren();
         const keys = html('div', keyboard, undefined, 'keys');
+        const visible = Array.from({ length: Math.min(36, 128 - basePitch) }, (_, index) => basePitch + index);
+        const isBlack = (midi) => [1, 3, 6, 8, 10].includes(midi % 12);
+        const whiteCount = visible.filter((midi) => !isBlack(midi)).length;
+        keys.style.setProperty('--white-keys', whiteCount);
         let whites = 0;
-        for (let midi = basePitch; midi < Math.min(128, basePitch + 36); midi++) {
-            const black = [1, 3, 6, 8, 10].includes(midi % 12);
-            const key = html('button', keys, black ? '' : pitchName(midi), black ? 'black-key' : 'white-key');
-            key.style.left = `${black ? whites * 32 - 10 : whites * 32}px`;
+        for (const midi of visible) {
+            const black = isBlack(midi);
+            const key = html('button', keys, undefined, black ? 'black-key' : 'white-key');
+            key.style.left = `${100 * (black ? whites - .31 : whites) / whiteCount}%`;
             key.setAttribute('aria-label', `피아노 ${pitchName(midi)}`);
+            const computerKey = computerKeys[midi - Number(firstPitch.value)];
+            if (computerKey) html('span', key, computerKey.toUpperCase(), 'computer-key');
+            if (!black) html('span', key, pitchName(midi));
+            key.toggleAttribute('data-first-key', midi === Number(firstPitch.value));
+            key.title = `${pitchName(midi)}${computerKey ? ` · ${computerKey.toUpperCase()} 키` : ''}`;
             key.addEventListener('click', () => enterPitch(midi));
             if (!black) whites++;
         }
-        keys.style.width = `${whites * 32}px`;
     }
     function stopAudio() {
         audioVersion++;
@@ -387,8 +454,11 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
         const match = payload.tempo?.match(/^([\d/]+) = ([\d/]+)$/);
         const parse = (s) => { const [n, d = 1] = s.split('/').map(Number); return n / d; };
         const seconds = match ? 60 / (parse(match[1]) * parse(match[2])) : 60 / (104 / 4);
-        for (const tone of bar.tones) if (tone.midi !== null) sound(tone.midi, value(tone.duration) * seconds, value(tone.offset) * seconds);
-        message('현재 성부·마디를 기본 Q: 템포로 재생합니다.');
+        const parts = playback.value === 'all' ? payload.voices : [currentVoice()];
+        for (const part of parts) for (const tone of part.measures[Number(measure.value) - 1]?.tones ?? []) {
+            if (tone.midi !== null) sound(tone.midi, value(tone.duration) * seconds, value(tone.offset) * seconds);
+        }
+        message(`현재 마디의 ${playback.value === 'all' ? '모든 성부' : '선택 성부'}를 기본 Q: 템포로 재생합니다.`);
     }
 
     source.addEventListener('input', () => {
@@ -409,34 +479,77 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
     });
     const changeBar = () => { selected = undefined; cursor = [0, 1]; measure.max = currentVoice()?.measures.length ?? 1;
         measure.value = Math.max(1, Math.min(Number(measure.value) || 1, Number(measure.max))); focusSelection(undefined); };
-    voices.addEventListener('change', changeBar); measure.addEventListener('change', changeBar); grid.addEventListener('change', drawRoll);
+    voices.addEventListener('change', changeBar); measure.addEventListener('change', changeBar);
+    grid.addEventListener('change', () => { drawPosition(); drawRoll(); });
+    position.addEventListener('change', () => { cursor = position.value.split('/').map(Number); focusSelection(undefined); });
+    addPart.addEventListener('click', () => enqueue(() => ({ action: 'add_voice', voice: voices.value,
+        name: partName.value.trim(), clef: partClef.value }), (next) => {
+        voices.value = next.addedVoice; measure.value = 1; changeBar();
+    }));
     append.addEventListener('click', () => enqueue(() => ({ action: 'append' }), () => { measure.value = Number(measure.max); changeBar(); }));
     noteDown.addEventListener('click', () => changePitch(-1)); noteUp.addEventListener('click', () => changePitch(1));
     resize.addEventListener('click', () => { if (selected) {
         const target = { ...selected }; const length = durationRatio();
-        enqueue(() => paintAction(target.midi, target.offset, length, target));
+        let action;
+        enqueue(() => {
+            action = { ...paintAction(target.midi, target.offset, length, target), action: 'move', additive: true,
+                oldOffset: target.offset, oldDuration: target.duration, erasePitch: target.midi };
+            return action;
+        }, () => focusSelection(action));
     } });
     erase.addEventListener('click', () => {
         const target = selected ? { ...selected } : { voice: voices.value, measure: Number(measure.value) - 1, offset: cursor, duration: durationRatio() };
-        enqueue(() => paintAction(null, target.offset, target.duration, target));
+        enqueue(() => ({ ...paintAction(null, target.offset, target.duration, target), action: 'erase', erasePitch: target.midi }));
     });
     applyChord.addEventListener('click', () => enqueue(() => ({ action: 'chord', voice: voices.value,
         measure: Number(measure.value) - 1, offset: cursor, chord: chord.value.trim() })));
     staffTab.addEventListener('click', () => { notation.hidden = false; roll.hidden = true; staffTab.setAttribute('aria-pressed', 'true'); rollTab.setAttribute('aria-pressed', 'false'); });
     rollTab.addEventListener('click', () => { notation.hidden = true; roll.hidden = false; staffTab.setAttribute('aria-pressed', 'false'); rollTab.setAttribute('aria-pressed', 'true'); drawRoll(); });
     staffTab.setAttribute('aria-pressed', 'true'); rollTab.setAttribute('aria-pressed', 'false');
-    for (const [button, delta] of [[octaveDown, -12], [octaveUp, 12]]) button.addEventListener('click', () => {
-        basePitch = Math.max(0, Math.min(92, basePitch + delta)); drawKeyboard(); drawRoll();
-    });
+    function changeFirstPitch(midi) {
+        firstPitch.value = Math.max(0, Math.min(115, midi));
+        basePitch = Math.max(0, Math.min(96, Math.floor(Number(firstPitch.value) / 12) * 12 - 12));
+        drawKeyboard(); drawRoll();
+    }
+    firstPitch.addEventListener('change', () => changeFirstPitch(Number(firstPitch.value)));
+    for (const [button, delta] of [[octaveDown, -12], [octaveUp, 12]]) button.addEventListener('click', () => changeFirstPitch(Number(firstPitch.value) + delta));
     play.addEventListener('click', playMeasure); stop.addEventListener('click', stopAudio);
     root.addEventListener('keydown', (event) => {
         if (['TEXTAREA', 'INPUT', 'SELECT'].includes(event.target.tagName)) return;
         if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') { event.preventDefault(); (event.shiftKey ? redo : undo).click(); return; }
         if (event.key === 'Delete' || event.key === 'Backspace') { event.preventDefault(); erase.click(); return; }
         if (event.key === 'ArrowUp' || event.key === 'ArrowDown') { event.preventDefault(); changePitch(event.key === 'ArrowUp' ? 1 : -1); return; }
-        const key = 'awsedftgyhujk'.indexOf(event.key.toLowerCase());
-        if (key >= 0 && !event.repeat && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); enterPitch(Math.min(127, basePitch + 12 + key)); }
+        const code = event.code?.startsWith('Key') ? event.code.slice(3).toLowerCase() : event.key.toLowerCase();
+        const key = computerKeys.indexOf(code);
+        if (key >= 0 && !event.repeat && !event.ctrlKey && !event.metaKey && !event.altKey) {
+            event.preventDefault();
+            const midi = Number(firstPitch.value) + key;
+            sound(midi);
+            if (!inputEnabled.checked || pressedKeys.has(code)) return;
+            if (!pressedKeys.size) keyboardEntry = { epoch, additive: overlap.checked, action: null, success: false };
+            pressedKeys.add(code);
+            const entry = keyboardEntry;
+            enqueue(() => {
+                if (!entry.action) entry.action = paintAction(midi);
+                return entry.action && { ...entry.action, midi, action: entry.additive ? 'add' : 'paint' };
+            }, () => { entry.success = true; });
+        }
     });
+    function releaseKeyboard() {
+        const entry = keyboardEntry;
+        keyboardEntry = undefined; pressedKeys.clear();
+        if (!entry) return;
+        chain = chain.then(() => {
+            if (!destroyed && entry.epoch === epoch && entry.action && entry.success) advanceCursor(entry.action);
+        }).catch((error) => { if (!destroyed) message(`편집 오류: ${error.message}`, true); });
+    }
+    root.addEventListener('keyup', (event) => {
+        const code = event.code?.startsWith('Key') ? event.code.slice(3).toLowerCase() : event.key.toLowerCase();
+        pressedKeys.delete(code);
+        if (!pressedKeys.size) releaseKeyboard();
+    });
+    root.addEventListener('focusout', (event) => { if (!root.contains(event.relatedTarget)) releaseKeyboard(); });
+    window.addEventListener('blur', releaseKeyboard);
     for (const type of ['pointerdown', 'keydown', 'wheel']) element.addEventListener(type, (event) => event.stopPropagation());
     drawKeyboard(); updateMode();
     return {
@@ -452,6 +565,7 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
             if (changedInput && !followInput()) message('새 입력 ABC가 도착했습니다. 편집본은 유지했으며, 입력 ABC 불러오기로 전환할 수 있습니다.');
             updateMode();
         },
-        destroy() { destroyed = true; closeDialog(); cancelPending(); stopAudio(); audio?.close(); view.destroy(); element.remove(); },
+        destroy() { destroyed = true; closeDialog(); cancelPending(); window.removeEventListener('blur', releaseKeyboard);
+            stopAudio(); audio?.close(); view.destroy(); element.remove(); },
     };
 }

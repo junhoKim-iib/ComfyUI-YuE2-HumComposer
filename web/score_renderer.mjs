@@ -141,11 +141,15 @@ function stems(parent, notes, top) {
     const up = notes.reduce((sum, note) => sum + note.y, 0) / notes.length >= top + 20;
     const direction = up ? 1 : -1;
     const end = up ? Math.min(...notes.map((n) => n.y)) - 31 : Math.max(...notes.map((n) => n.y)) + 31;
+    const columns = new Map();
     for (const note of notes) {
         note.stemUp = up;
         note.stemX = note.x + direction * 5;
-        line(parent, note.stemX, note.y, note.stemX, end, 1.5);
+        const previous = columns.get(note.x);
+        if (!previous || (up ? note.y > previous.y : note.y < previous.y)) columns.set(note.x, note);
     }
+    notes = [...columns.values()];
+    for (const note of notes) line(parent, note.stemX, note.y, note.stemX, end, 1.5);
     const maxFlags = Math.max(...notes.map((n) => flags(n.event.denominator)));
     if (notes.length === 1) {
         for (let level = 0; level < maxFlags; level++) {
@@ -292,7 +296,9 @@ export function renderScore(payload, { voiceId = "all", page = 0, barsPerLine = 
                         continue;
                     }
                     const nextBeat = Math.floor((value(event.offset) + 1e-9) / beatLength);
-                    if (nextBeat !== beat || event.kind !== "note" || !flags(event.denominator)) flush();
+                    const sameTime = beam.length && beam.at(-1).x === x;
+                    if (!sameTime && (nextBeat !== beat || event.kind !== "note" || !flags(event.denominator) ||
+                        (beam.length && !flags(beam.at(-1).event.denominator)))) flush();
                     beat = nextBeat;
                     if (event.kind === "rest") {
                         const restGroup = svg(group, "g", { "data-kind": "rest", "data-measure": layout.index,
@@ -302,12 +308,13 @@ export function renderScore(payload, { voiceId = "all", page = 0, barsPerLine = 
                     }
                     else {
                         const y = noteY(event.step, voice.clef, top);
-                        head(group, x, y, event, top, layout.index);
-                        const position = { x, y, event };
+                        const neighbor = positions.findLast((position) => position.x === x && Math.abs(position.y - y) <= 5);
+                        const headX = neighbor?.headX === x ? x + 11 : x;
+                        head(group, headX, y, event, top, layout.index);
+                        const position = { x, y, event, headX };
                         positions.push(position);
                         if (event.denominator > 1) {
-                            if (flags(event.denominator)) beam.push(position);
-                            else stems(group, [position], top);
+                            beam.push(position);
                         }
                     }
                     dots(group, x, event.kind === "note" ? noteY(event.step, voice.clef, top) : top + 20, event, top);
@@ -316,14 +323,17 @@ export function renderScore(payload, { voiceId = "all", page = 0, barsPerLine = 
                 line(group, layout.right, top, layout.right, top + 40);
                 if (layout.index === total - 1) line(group, layout.right - 5, top, layout.right - 5, top + 40, 2.5);
             }
-            for (let index = 0; index < positions.length; index++) {
-                const current = positions[index];
-                const previous = positions[index - 1];
+            const lastByPitch = new Map();
+            for (const current of positions) {
+                const previous = lastByPitch.get(current.event.midi);
                 if (current.event.tieIn) {
                     if (previous?.event.tieOut) tie(group, previous.x + 6, previous.y, current.x - 6, current.y, previous.stemUp !== false);
                     else tie(group, current.x - 28, current.y, current.x - 6, current.y, current.stemUp !== false);
                 }
-                if (current.event.tieOut && index === positions.length - 1) tie(group, current.x + 6, current.y, width - 32, current.y, current.stemUp !== false);
+                lastByPitch.set(current.event.midi, current);
+            }
+            for (const current of lastByPitch.values()) if (current.event.tieOut) {
+                tie(group, current.x + 6, current.y, width - 32, current.y, current.stemUp !== false);
             }
             voiceY = top + maxY + 45;
         }
@@ -404,6 +414,7 @@ export function createScoreView({ onSelect } = {}) {
         for (const note of paper.querySelectorAll('[data-kind="note"],[data-kind="rest"]')) {
             const active = selection && note.closest('[data-voice]').getAttribute('data-voice') === selection.voice &&
                 Number(note.getAttribute('data-measure')) === selection.measure &&
+                (selection.midi === undefined || (note.hasAttribute('data-midi') ? Number(note.getAttribute('data-midi')) : null) === selection.midi) &&
                 note.getAttribute('data-offset') === selection.offset.join('/');
             note.toggleAttribute('data-selected', Boolean(active));
         }

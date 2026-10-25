@@ -3,7 +3,7 @@ import asyncio
 from fractions import Fraction
 import sys
 
-from .humcomposer.abc.editing import paint_interval, edit_chord, append_measure
+from .humcomposer.abc.editing import paint_interval, edit_chord, append_measure, add_voice
 from .nodes.score import _preview
 
 
@@ -20,17 +20,27 @@ def handle_score_request(data: dict) -> dict:
         raise ValueError('Expected an ABC string')
     abc = data['abc']
     action = data.get('action', 'preview')
-    if action in ('paint', 'move'):
+    added_voice = None
+    if action in ('paint', 'add', 'move', 'erase'):
         origin = (_time(data, 'oldOffset'), _time(data, 'oldDuration')) if action == 'move' else None
+        additive = data.get('additive', action == 'add')
+        if not isinstance(additive, bool):
+            raise ValueError('additive must be a boolean')
         abc = paint_interval(abc, data.get('voice'), data.get('measure'), _time(data, 'offset'),
-                             _time(data, 'duration'), data.get('midi'), origin)
+                             _time(data, 'duration'), None if action == 'erase' else data.get('midi'), origin,
+                             additive=additive, erase_pitch=data.get('erasePitch'))
     elif action == 'chord':
         abc = edit_chord(abc, data.get('voice'), data.get('measure'), _time(data, 'offset'), data.get('chord'))
     elif action == 'append':
         abc = append_measure(abc)
+    elif action == 'add_voice':
+        abc, added_voice = add_voice(abc, data.get('voice'), data.get('name', ''), data.get('clef', 'treble'))
     elif action != 'preview':
         raise ValueError('Unknown score action')
-    return _preview(abc)
+    payload = _preview(abc)
+    if added_voice:
+        payload['addedVoice'] = added_voice
+    return payload
 
 
 def register_routes() -> None:

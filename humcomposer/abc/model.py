@@ -105,7 +105,15 @@ class ChordSymbol:
     span: SourceSpan
 
 
-Event = Note | Rest | ChordSymbol
+@dataclass(frozen=True)
+class NoteStack:
+    notes: tuple[Note, ...]
+    onset: Fraction
+    duration: Fraction
+    span: SourceSpan
+
+
+Event = Note | Rest | ChordSymbol | NoteStack
 
 
 @dataclass(frozen=True)
@@ -123,7 +131,9 @@ class Measure:
 
     @property
     def notes(self) -> tuple[Note, ...]:
-        return tuple(event for event in self.events if isinstance(event, Note))
+        return tuple(note for event in self.events
+                     for note in (event.notes if isinstance(event, NoteStack) else
+                                  (event,) if isinstance(event, Note) else ()))
 
     @property
     def chords(self) -> tuple[ChordSymbol, ...]:

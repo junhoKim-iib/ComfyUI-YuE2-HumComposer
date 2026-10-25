@@ -23,7 +23,7 @@ class ABCScoreEditor:
 
     def edit(self, abc: str, follow_input: bool = True, source_abc: str = '') -> dict:
         output = source_abc if follow_input and source_abc else abc
-        require_valid(parse_abc(output))
+        require_valid(parse_abc(output, polyphonic=True))
         payload = _preview(output)
         payload.update(inputSource=source_abc, followInput=follow_input)
         return {'ui': {'editor': [payload]}, 'result': (output,)}

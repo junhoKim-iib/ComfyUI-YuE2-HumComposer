@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 import re
 
-from .model import Score, SourceSpan, Note
+from .model import Score, SourceSpan, Note, NoteStack
 
 
 @dataclass(frozen=True)
@@ -21,15 +21,18 @@ def validate_score(score: Score, *, native: bool = False) -> tuple[ValidationIss
         error("missing_music", "No musical events found")
     if not score.sections or all(s.name == "unsectioned" for s in score.sections):
         issues.append(ValidationIssue("warning", "missing_sections", "No named sections; anchors need section comments"))
-    if native and {v.id for v in score.voices} != {"Vocal", "Ins"}:
+    if native and not {"Vocal", "Ins"}.issubset({v.id for v in score.voices}):
         error("missing_voices", "Native song requires Vocal and Ins voices")
+    if native and len(score.voices) > 2:
+        issues.append(ValidationIssue('warning', 'additional_voices',
+                      'Additional parts are preserved in ABC; native model reproduction has not been verified'))
     if native:
         fields = {h.field for h in score.headers}
         for field in ('X','T','Q'):
             if field not in fields:
                 issues.append(ValidationIssue('warning','missing_header',f'Native exporter normally supplies {field}:; inspect source'))
     for voice in score.voices:
-        pending = None
+        pending = {}
         for bar in voice.measures:
             if bar.duration != bar.meter.duration:
                 error("bar_duration", f"{voice.id} bar {bar.index + 1}: {bar.duration}, expected {bar.meter.duration}", bar.span)
@@ -41,14 +44,16 @@ def validate_score(score: Score, *, native: bool = False) -> tuple[ValidationIss
                         error('chord_voice','Native chords must be in Vocal voice',event.span)
                 if hasattr(event, "duration") and event.duration <= 0:
                     error("invalid_duration", "Event duration must be positive", event.span)
-                if isinstance(event, Note):
-                    if event.tie_from_previous and (pending is None or pending.midi != event.midi):
+                if isinstance(event, (Note, NoteStack)):
+                    notes = event.notes if isinstance(event, NoteStack) else (event,)
+                    continued = {note.midi for note in notes if note.tie_from_previous}
+                    if continued != set(pending):
                         error("broken_tie", "Tie does not continue an equal pitch", event.span)
-                    pending = event if event.tie_to_next else None
+                    pending = {note.midi: note for note in notes if note.tie_to_next}
             if len({c.onset for c in bar.chords}) != len(bar.chords):
                 error('duplicate_chord_onset',f'{voice.id} bar {bar.index+1}: simultaneous chord symbols',bar.span)
-        if pending is not None:
-            error("unresolved_tie", f"{voice.id}: unresolved final tie", pending.span)
+        if pending:
+            error("unresolved_tie", f"{voice.id}: unresolved final tie", next(iter(pending.values())).span)
     for section in score.sections:
         grids = []
         for voice in score.voices:

@@ -12,7 +12,7 @@ import re
 
 from .model import (
     ChordSymbol, ContextChange, Event, Header, KeySignature, Measure, Meter,
-    Note, Rest, Score, Section, SectionVoiceRange, SourceSpan, Tempo, Voice,
+    Note, NoteStack, Rest, Score, Section, SectionVoiceRange, SourceSpan, Tempo, Voice,
     score_fingerprint,
 )
 
@@ -131,6 +131,7 @@ class _VoiceState:
     accidentals: dict[str, int] = field(default_factory=dict)
     pending_tie: Note | None = None
     pending_tie_natural: int | None = None
+    pending_poly: dict[tuple[int, int], Note] = field(default_factory=dict)
     section_id: str = ""
     rest_count: int = 1
     full_rest: bool = False
@@ -148,8 +149,9 @@ class _SectionState:
 
 
 class _Parser:
-    def __init__(self, source: str):
+    def __init__(self, source: str, polyphonic: bool = False):
         self.source = source
+        self.polyphonic = polyphonic
         self.headers: list[Header] = []
         self.changes: list[ContextChange] = []
         self.voices: dict[str, _VoiceState] = {}
@@ -286,6 +288,93 @@ class _Parser:
         elif name in {"P", "I", "U", "m", "w"}:
             raise ABCParseError("unsupported_field", f"Field {name}: may alter playback and is unsupported", span.start)
 
+    def poly_note(self, state: _VoiceState, line: str, index: int, offset: int) -> int:
+        start = index
+        stacked = line[index] == '['
+        if stacked:
+            index += 1
+        pitches = []
+        while True:
+            while index < len(line) and line[index].isspace():
+                index += 1
+            match = _NOTE.match(line, index)
+            if not match or (stacked and match['letter'] == 'z'):
+                raise ABCParseError('invalid_note_stack', 'Expected a pitch in the note stack', offset + index)
+            index = match.end()
+            tied = stacked and index < len(line) and line[index] == '-'
+            if tied:
+                index += 1
+            pitches.append((match, tied, SourceSpan(offset + match.start(), offset + index)))
+            if not stacked:
+                break
+            while index < len(line) and line[index].isspace():
+                index += 1
+            if index < len(line) and line[index] == ']':
+                index += 1
+                break
+            if len(pitches) >= 128:
+                raise ABCParseError('invalid_note_stack', 'Too many pitches in a note stack', offset + index)
+        self.event_count += len(pitches) - 1
+        if self.event_count > MAX_EVENTS:
+            raise ABCParseError('resource_limit', 'ABC event limit exceeded', offset + start)
+        length = _LENGTH.match(line, index)
+        duration = state.unit * _length(length[0] if length else '', offset + start)
+        if length:
+            index = length.end()
+        all_tied = index < len(line) and line[index] == '-'
+        if all_tied:
+            index += 1
+        span = SourceSpan(offset + start, offset + index)
+        onset = state.onset + state.elapsed
+        if pitches[0][0]['letter'] == 'z':
+            match = pitches[0][0]
+            if match['acc'] or match['oct'] or all_tied or state.pending_poly:
+                raise ABCParseError('invalid_rest', 'Rests cannot carry pitch modifiers or participate in ties', span.start)
+            event = Rest(onset, duration, span)
+        else:
+            pending = dict(state.pending_poly)
+            next_pending = {}
+            notes = []
+            for match, tied, pitch_span in pitches:
+                letter = match['letter'].upper()
+                octave = (5 if match['letter'].islower() else 4) + match['oct'].count("'") - match['oct'].count(',')
+                natural = 12 * (octave + 1) + _PITCHES[letter]
+                accidental = None
+                if match['acc']:
+                    accidental = match['acc'].count('^') - match['acc'].count('_')
+                    state.accidentals[letter] = accidental
+                midi = natural + state.accidentals.get(letter, state.key.accidentals.get(letter, 0))
+                previous_key = (natural, midi) if (natural, midi) in pending else None
+                if previous_key is None and accidental is None:
+                    same_register = [key for key in pending if key[0] == natural]
+                    if len(same_register) == 1:
+                        previous_key = same_register[0]
+                if previous_key is None:
+                    previous_key = next((key for key, note in pending.items() if note.midi == midi), None)
+                previous = pending.pop(previous_key) if previous_key is not None else None
+                if previous is not None:
+                    if accidental is None:
+                        midi = previous.midi
+                    if midi != previous.midi:
+                        raise ABCParseError('broken_tie', 'A tied continuation must preserve the sounding pitch', pitch_span.start)
+                if not 0 <= midi <= 127:
+                    raise ABCParseError('pitch_out_of_range', f'Pitch {midi} is outside MIDI 0..127', pitch_span.start)
+                if any(note.midi == midi for note in notes):
+                    raise ABCParseError('duplicate_pitch', 'A note stack cannot repeat the same pitch', pitch_span.start)
+                note = Note(midi, letter, accidental, onset, duration, previous is not None,
+                            tied or all_tied, pitch_span if stacked else span)
+                notes.append(note)
+                if note.tie_to_next:
+                    next_pending[(natural, midi)] = note
+            if pending:
+                raise ABCParseError('broken_tie', 'A tied pitch is missing from its continuation', span.start)
+            state.pending_poly = next_pending
+            event = NoteStack(tuple(notes), onset, duration, span) if stacked else notes[0]
+        state.events.append(event)
+        state.elapsed += duration
+        state.last_end = offset + index
+        return index
+
     def music(self, line: str, offset: int) -> None:
         state = self.current(offset)
         index = 0
@@ -307,6 +396,12 @@ class _Parser:
                 index = end
                 continue
             if char == "[":
+                if self.polyphonic and _NOTE.match(line, index + 1):
+                    if state.full_rest:
+                        raise ABCParseError('invalid_multirest', 'No music may follow Z<n> before its bar line', position)
+                    self.begin(state, position)
+                    index = self.poly_note(state, line, index, offset)
+                    continue
                 match = re.match(r"\[([KMLQV]):([^\]]+)\]", line[index:])
                 if not match:
                     raise ABCParseError("unsupported_bracket", "Note stacks, repeats, and unknown inline fields are unsupported", position)
@@ -342,7 +437,7 @@ class _Parser:
                     raise ABCParseError("invalid_rest", "Full-bar rest count must be positive", position)
                 if count>MAX_MEASURES:
                     raise ABCParseError('resource_limit', 'Compressed rest exceeds measure limit', position)
-                if state.events or state.elapsed or state.pending_tie:
+                if state.events or state.elapsed or state.pending_tie or state.pending_poly:
                     raise ABCParseError("invalid_multirest", "Z<n> must occupy otherwise empty complete bars", position)
                 duration = state.meter.duration * count
                 state.rest_count = count
@@ -354,6 +449,9 @@ class _Parser:
                 continue
             if state.full_rest:
                 raise ABCParseError("invalid_multirest", "No music may follow Z<n> before its bar line", position)
+            if self.polyphonic:
+                index = self.poly_note(state, line, index, offset)
+                continue
             match = _NOTE.match(line, index)
             if not match:
                 raise ABCParseError("unsupported_syntax", f"Unsupported rhythmic/music token {line[index:index + 12]!r}", position)
@@ -432,11 +530,11 @@ class _Parser:
         return replace(score, source_model_digest=score_fingerprint(score))
 
 
-def parse_abc(source: str) -> Score:
+def parse_abc(source: str, *, polyphonic: bool = False) -> Score:
     if not isinstance(source, str):
         raise TypeError("ABC source must be a string")
     if not source.strip():
         raise ABCParseError("empty_score", "ABC source is empty")
     if len(source)>MAX_SOURCE_CHARS:
         raise ABCParseError('resource_limit', 'ABC source exceeds 2,000,000 characters')
-    return _Parser(source).parse()
+    return _Parser(source, polyphonic=polyphonic).parse()

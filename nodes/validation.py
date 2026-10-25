@@ -17,7 +17,7 @@ class ABCValidate:
 
     def validate(self, abc: str, native_song: bool = True) -> dict:
         try:
-            score = parse_abc(abc)
+            score = parse_abc(abc, polyphonic=True)
         except ABCParseError as error:
             report = f'FAIL\nERROR [{error.code}] offset {error.offset}: {error}'
             return {'ui':{'text':[report]},'result':(False,report)}
