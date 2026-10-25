@@ -111,9 +111,10 @@ function rest(parent, x, top, event) {
     }
 }
 
-function head(parent, x, y, event, top) {
+function head(parent, x, y, event, top, measure) {
     const group = svg(parent, "g", { "data-kind": "note", "data-midi": event.midi,
-        "data-step": event.step, "data-duration": event.duration.join("/"), "data-onset-x": x });
+        "data-step": event.step, "data-duration": (event.sourceDuration ?? event.duration).join("/"), "data-onset-x": x,
+        "data-measure": measure, "data-offset": (event.sourceOffset ?? event.offset).join("/") });
     svg(group, "title", {}, `MIDI ${event.midi} · ${event.duration.join("/")}`);
     for (let ledger = top - 10; ledger >= y - 1; ledger -= 10) line(group, x - 10, ledger, x + 10, ledger);
     for (let ledger = top + 50; ledger <= y + 1; ledger += 10) line(group, x - 10, ledger, x + 10, ledger);
@@ -293,10 +294,15 @@ export function renderScore(payload, { voiceId = "all", page = 0, barsPerLine = 
                     const nextBeat = Math.floor((value(event.offset) + 1e-9) / beatLength);
                     if (nextBeat !== beat || event.kind !== "note" || !flags(event.denominator)) flush();
                     beat = nextBeat;
-                    if (event.kind === "rest") rest(group, event.fullRest ? (layout.left + layout.prefix + layout.right) / 2 : x, top, event);
+                    if (event.kind === "rest") {
+                        const restGroup = svg(group, "g", { "data-kind": "rest", "data-measure": layout.index,
+                            "data-offset": (event.sourceOffset ?? event.offset).join("/"),
+                            "data-duration": (event.sourceDuration ?? event.duration).join("/") });
+                        rest(restGroup, event.fullRest ? (layout.left + layout.prefix + layout.right) / 2 : x, top, event);
+                    }
                     else {
                         const y = noteY(event.step, voice.clef, top);
-                        head(group, x, y, event, top);
+                        head(group, x, y, event, top, layout.index);
                         const position = { x, y, event };
                         positions.push(position);
                         if (event.denominator > 1) {
@@ -336,7 +342,7 @@ export function renderScore(payload, { voiceId = "all", page = 0, barsPerLine = 
     return root;
 }
 
-export function createScoreView() {
+export function createScoreView({ onSelect } = {}) {
     const element = document.createElement("div");
     element.style.cssText = "width:100%;height:100%;min-height:320px";
     const shadow = element.attachShadow({ mode: "open" });
@@ -391,7 +397,31 @@ export function createScoreView() {
     let page = 0;
     let zoom = 1;
     let currentSvg;
+    let selection;
     const urls = new Set();
+
+    function highlight() {
+        for (const note of paper.querySelectorAll('[data-kind="note"],[data-kind="rest"]')) {
+            const active = selection && note.closest('[data-voice]').getAttribute('data-voice') === selection.voice &&
+                Number(note.getAttribute('data-measure')) === selection.measure &&
+                note.getAttribute('data-offset') === selection.offset.join('/');
+            note.toggleAttribute('data-selected', Boolean(active));
+        }
+    }
+    if (onSelect) {
+        paper.classList.add('editable');
+        paper.addEventListener('click', (event) => {
+            const target = event.target.closest('[data-kind="note"],[data-kind="rest"]');
+            if (!target) return;
+            selection = { voice: target.closest('[data-voice]').getAttribute('data-voice'),
+                measure: Number(target.getAttribute('data-measure')),
+                offset: target.getAttribute('data-offset').split('/').map(Number),
+                duration: target.getAttribute('data-duration').split('/').map(Number),
+                midi: target.hasAttribute('data-midi') ? Number(target.getAttribute('data-midi')) : null };
+            highlight();
+            onSelect(selection);
+        });
+    }
 
     function draw() {
         paper.replaceChildren();
@@ -414,6 +444,7 @@ export function createScoreView() {
         try {
             currentSvg = renderScore(payload, { voiceId: voices.value, page, barsPerLine: Number(measures.value) });
             paper.append(currentSvg);
+            highlight();
             paper.style.width = `${zoom * 100}%`;
             zoomText.textContent = `${Math.round(zoom * 100)}%`;
             pageText.textContent = `${page + 1} / ${pages} · ${page * PAGE_BARS + 1}–${Math.min(total, (page + 1) * PAGE_BARS)} / ${total} 마디`;
@@ -467,6 +498,14 @@ export function createScoreView() {
             results.forEach((result, index) => { html("option", batches, `결과 ${index + 1}`).value = index; });
             batches.hidden = results.length < 2;
             selectResult();
+        },
+        focus(nextSelection) {
+            selection = nextSelection;
+            if (payload?.voices && selection) {
+                page = Math.floor(selection.measure / PAGE_BARS);
+                if (voices.value !== 'all') voices.value = selection.voice;
+                draw();
+            } else highlight();
         },
         destroy() {
             for (const url of urls) URL.revokeObjectURL(url);

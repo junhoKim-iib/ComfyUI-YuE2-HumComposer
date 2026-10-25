@@ -16,3 +16,6 @@ button:focus-visible, select:focus-visible { outline: 2px solid #2563eb; outline
 .pager { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; padding: 6px; border-top: 1px solid #ccd5df; }
 details { padding: 0 10px 6px; max-height: 110px; overflow: auto; }
 details pre { white-space: pre-wrap; overflow-wrap: anywhere; font: 12px "Segoe UI", sans-serif; }
+.editable [data-kind="note"], .editable [data-kind="rest"] { cursor: pointer; }
+[data-selected] ellipse, [data-selected] path, [data-selected] rect { stroke: #2563eb; }
+[data-selected] ellipse { fill: #8cb9ff; }

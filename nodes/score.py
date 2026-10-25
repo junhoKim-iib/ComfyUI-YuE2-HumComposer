@@ -27,6 +27,19 @@ def _ratio(value: Fraction) -> list[int]:
     return [value.numerator, value.denominator]
 
 
+def _roll_tones(bar) -> list[dict]:
+    tones = []
+    for event in bar.events:
+        if not isinstance(event, (Note, Rest)):
+            continue
+        if isinstance(event, Note) and event.tie_from_previous and tones and tones[-1]['midi'] == event.midi:
+            tones[-1]['duration'] = _ratio(Fraction(*tones[-1]['duration']) + event.duration)
+        else:
+            tones.append({'offset': _ratio(event.onset - bar.onset), 'duration': _ratio(event.duration),
+                          'midi': event.midi if isinstance(event, Note) else None})
+    return tones
+
+
 def _voice_metadata(score, voice_id: str) -> tuple[str, str]:
     name, clef = voice_id, 'treble'
     declared_clef = None
@@ -111,6 +124,8 @@ def _preview(abc: str) -> dict:
                 for part_index, (duration, denominator, dots) in enumerate(parts):
                     fractional_rhythm |= denominator == 0
                     display.append({'kind': 'note' if note else 'rest', 'offset': _ratio(offset),
+                                    'sourceOffset': _ratio(event.onset - bar.onset),
+                                    'sourceDuration': _ratio(event.duration),
                                     'duration': _ratio(duration), 'denominator': denominator, 'dots': dots,
                                     'fullRest': full_rest,
                                     'tieIn': bool(note) and (event.tie_from_previous or part_index > 0),
@@ -119,7 +134,8 @@ def _preview(abc: str) -> dict:
                     offset += duration
             measures.append({'index': bar.index, 'onset': _ratio(bar.onset), 'duration': _ratio(bar.duration),
                              'meter': [bar.meter.numerator, bar.meter.denominator], 'fifths': bar.key.fifths,
-                             'section': bar.section_id, 'events': display})
+                             'section': bar.section_id, 'events': display,
+                             'tones': _roll_tones(bar)})
         voices.append({'id': voice.id, 'name': name, 'clef': clef, 'measures': measures})
     grids = [[(bar.onset, bar.duration, bar.meter) for bar in voice.measures]
              for voice in score.voices if voice.measures]
