@@ -114,6 +114,8 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
     let selected;
     let cursor = [0, 1];
     let basePitch = 48;
+    let keyboardPitches = [];
+    let keyboardLayout = '';
     let epoch = 0;
     let revision = 0;
     let timer;
@@ -178,7 +180,7 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
         selected = next;
         if (next) {
             voices.value = next.voice; measure.value = next.measure + 1; cursor = next.offset;
-            if (next.midi !== null && (next.midi < basePitch || next.midi >= basePitch + 36)) {
+            if (next.midi !== null && !keyboardPitches.includes(next.midi)) {
                 basePitch = Math.max(0, Math.min(96, Math.floor(next.midi / 12) * 12 - 12));
                 drawKeyboard();
             }
@@ -330,11 +332,13 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
         const columns = Math.ceil(value(bar.duration) * unit);
         if (columns > 256) { html('p', roll, '이 마디는 격자가 너무 큽니다. 더 큰 입력 격자를 선택하세요.'); return; }
         const width = 64 + columns * 32;
-        const rows = Math.min(36, 128 - basePitch);
+        const rows = keyboardPitches.length;
+        if (!rows) return;
+        const firstMidi = keyboardPitches[0];
         const height = 24 + rows * 14;
         const rootSvg = makeSvg(roll, 'svg', { width, height, viewBox: `0 0 ${width} ${height}`, role: 'group', 'aria-label': '피아노 롤 입력 격자' });
         for (let row = 0; row < rows; row++) {
-            const midi = basePitch + rows - 1 - row;
+            const midi = firstMidi + rows - 1 - row;
             const black = [1, 3, 6, 8, 10].includes(midi % 12);
             makeSvg(rootSvg, 'rect', { x: 0, y: 24 + row * 14, width, height: 14, fill: black ? '#e7edf4' : '#fff', stroke: '#dce4ee', 'stroke-width': .5 });
             makeSvg(rootSvg, 'text', { x: 5, y: 35 + row * 14, fill: '#41556c', 'font-size': 9 }, pitchName(midi));
@@ -344,10 +348,10 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
             makeSvg(rootSvg, 'line', { x1: x, x2: x, y1: 24, y2: height, stroke: col % (unit / bar.meter[1]) === 0 ? '#a6b6c9' : '#d7e0eb' });
             if (col < columns) makeSvg(rootSvg, 'text', { x: x + 3, y: 16, fill: '#536a83', 'font-size': 10 }, `${col + 1}`);
         }
-        for (const tone of bar.tones.filter((e) => e.midi !== null && e.midi >= basePitch && e.midi < basePitch + 36)) {
+        for (const tone of bar.tones.filter((e) => e.midi !== null && keyboardPitches.includes(e.midi))) {
             const x = 64 + value(tone.offset) * unit * 32;
             const active = selected && selected.midi === tone.midi && value(selected.offset) === value(tone.offset);
-            const rect = makeSvg(rootSvg, 'rect', { x, y: 25 + (basePitch + rows - 1 - tone.midi) * 14,
+            const rect = makeSvg(rootSvg, 'rect', { x, y: 25 + (firstMidi + rows - 1 - tone.midi) * 14,
                 width: Math.max(3, value(tone.duration) * unit * 32 - 2), height: 12, rx: 2,
                 fill: active ? '#184e9c' : '#3b82c4', 'data-roll-note': '',
                 'data-offset': tone.offset.join('/'), 'data-duration': tone.duration.join('/'), 'data-midi': tone.midi,
@@ -361,7 +365,7 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
             const point = rootSvg.createSVGPoint(); point.x = event.clientX; point.y = event.clientY;
             const local = point.matrixTransform(rootSvg.getScreenCTM().inverse());
             return { col: Math.max(0, Math.min(columns - 1, Math.floor((local.x - 64) / 32))),
-                midi: basePitch + rows - 1 - Math.max(0, Math.min(rows - 1, Math.floor((local.y - 24) / 14))), x: local.x };
+                midi: firstMidi + rows - 1 - Math.max(0, Math.min(rows - 1, Math.floor((local.y - 24) / 14))), x: local.x };
         };
         rootSvg.addEventListener('contextmenu', (event) => event.preventDefault());
         rootSvg.addEventListener('pointerdown', (event) => {
@@ -404,14 +408,23 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
     }
 
     function drawKeyboard() {
+        const width = keyboard.clientWidth;
+        if (!width) return false;
+        const isBlack = (midi) => [1, 3, 6, 8, 10].includes(midi % 12);
+        const whiteNotes = Array.from({ length: 128 }, (_, midi) => midi).filter((midi) => !isBlack(midi));
+        const whiteCount = Math.min(whiteNotes.length, Math.max(2, Math.ceil(width / 36)));
+        const first = Math.min(whiteNotes.indexOf(basePitch), whiteNotes.length - whiteCount);
+        const firstMidi = whiteNotes[first];
+        const lastMidi = whiteNotes[first + whiteCount - 1];
+        const layout = `${firstMidi}:${lastMidi}:${firstPitch.value}`;
+        if (layout === keyboardLayout) return false;
+        keyboardLayout = layout;
+        keyboardPitches = Array.from({ length: lastMidi - firstMidi + 1 }, (_, index) => firstMidi + index);
         keyboard.replaceChildren();
         const keys = html('div', keyboard, undefined, 'keys');
-        const visible = Array.from({ length: Math.min(36, 128 - basePitch) }, (_, index) => basePitch + index);
-        const isBlack = (midi) => [1, 3, 6, 8, 10].includes(midi % 12);
-        const whiteCount = visible.filter((midi) => !isBlack(midi)).length;
         keys.style.setProperty('--white-keys', whiteCount);
         let whites = 0;
-        for (const midi of visible) {
+        for (const midi of keyboardPitches) {
             const black = isBlack(midi);
             const key = html('button', keys, undefined, black ? 'black-key' : 'white-key');
             key.style.left = `${100 * (black ? whites - .31 : whites) / whiteCount}%`;
@@ -424,6 +437,7 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
             key.addEventListener('click', () => enterPitch(midi));
             if (!black) whites++;
         }
+        return true;
     }
     function stopAudio() {
         audioVersion++;
@@ -551,6 +565,10 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
     root.addEventListener('focusout', (event) => { if (!root.contains(event.relatedTarget)) releaseKeyboard(); });
     window.addEventListener('blur', releaseKeyboard);
     for (const type of ['pointerdown', 'keydown', 'wheel']) element.addEventListener(type, (event) => event.stopPropagation());
+    const keyboardResize = new ResizeObserver(() => {
+        if (!destroyed && drawKeyboard()) drawRoll();
+    });
+    keyboardResize.observe(keyboard);
     drawKeyboard(); updateMode();
     return {
         element,
@@ -565,7 +583,7 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
             if (changedInput && !followInput()) message('새 입력 ABC가 도착했습니다. 편집본은 유지했으며, 입력 ABC 불러오기로 전환할 수 있습니다.');
             updateMode();
         },
-        destroy() { destroyed = true; closeDialog(); cancelPending(); window.removeEventListener('blur', releaseKeyboard);
+        destroy() { destroyed = true; keyboardResize.disconnect(); closeDialog(); cancelPending(); window.removeEventListener('blur', releaseKeyboard);
             stopAudio(); audio?.close(); view.destroy(); element.remove(); },
     };
 }
