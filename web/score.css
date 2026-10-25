@@ -1,9 +1,9 @@
-:host { display: flex; width: 100%; height: 100%; min-height: 320px; color: #202b38; font: 13px "Segoe UI", sans-serif; }
+:host { display: flex; width: 100%; height: 100%; min-height: 320px; container-type: inline-size; color: #202b38; font: 16px/1.4 "Segoe UI", sans-serif; }
 * { box-sizing: border-box; }
-.viewer { display: flex; flex: 1; flex-direction: column; min-width: 0; overflow: hidden; border: 1px solid #bdc9d5; border-radius: 8px; background: #edf1f5; }
-.toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; padding: 8px; background: #f8fafc; border-bottom: 1px solid #ccd5df; }
+.viewer { display: flex; flex: 1; flex-direction: column; min-width: 0; overflow: hidden; border: 1px solid #bdc9d5; border-radius: 8px; background: #edf1f5; font-size: var(--score-ui-font-size, clamp(16px, 1.4cqw, 22px)); }
+.toolbar { display: flex; flex-shrink: 0; align-items: center; flex-wrap: wrap; gap: .4em; padding: .5em; background: #f8fafc; border-bottom: 1px solid #ccd5df; }
 .toolbar strong { margin-right: auto; }
-button, select { min-height: 28px; border: 1px solid #b7c3d1; border-radius: 4px; background: white; color: #202b38; font: inherit; padding: 3px 8px; }
+button, select { min-height: 2.1em; border: 1px solid #b7c3d1; border-radius: 4px; background: white; color: #202b38; font: inherit; padding: .2em .6em; }
 button { cursor: pointer; }
 button:hover:enabled { background: #e1ebf6; }
 button:disabled { opacity: .45; cursor: default; }
@@ -13,9 +13,9 @@ button:focus-visible, select:focus-visible { outline: 2px solid #2563eb; outline
 .viewport { flex: 1; min-height: 0; overflow: auto; padding: 14px; overscroll-behavior: contain; }
 .paper { min-height: 180px; background: white; box-shadow: 0 2px 8px #24375020; }
 .paper svg { display: block; width: 100%; height: auto; }
-.pager { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; padding: 6px; border-top: 1px solid #ccd5df; }
+.pager { display: flex; flex-shrink: 0; align-items: center; justify-content: center; flex-wrap: wrap; gap: .5em; padding: .4em; border-top: 1px solid #ccd5df; }
 details { padding: 0 10px 6px; max-height: 110px; overflow: auto; }
-details pre { white-space: pre-wrap; overflow-wrap: anywhere; font: 12px "Segoe UI", sans-serif; }
+details pre { white-space: pre-wrap; overflow-wrap: anywhere; font: .875em/1.4 "Segoe UI", sans-serif; }
 .editable [data-kind="note"], .editable [data-kind="rest"] { cursor: pointer; }
 [data-selected] ellipse, [data-selected] path, [data-selected] rect { stroke: #2563eb; }
 [data-selected] ellipse { fill: #8cb9ff; }

@@ -29,6 +29,15 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
     const toolbar = html('div', root, undefined, 'toolbar');
     html('strong', toolbar, '실시간 악보 · 피아노');
     const maximize = html('button', toolbar, '크게 편집');
+    html('span', toolbar, '메뉴 크기');
+    const menuSize = html('select', toolbar); menuSize.setAttribute('aria-label', '메뉴 크기');
+    for (const size of ['auto', 100, 125, 150, 175, 200]) {
+        html('option', menuSize, size === 'auto' ? '자동' : `${size}%`).value = size;
+    }
+    menuSize.addEventListener('change', () => {
+        if (menuSize.value === 'auto') element.style.removeProperty('--score-ui-font-size');
+        else element.style.setProperty('--score-ui-font-size', `${16 * Number(menuSize.value) / 100}px`);
+    });
     const mode = html('span', toolbar, '', 'mode');
     const load = html('button', toolbar, '입력 ABC 불러오기');
     const undo = html('button', toolbar, '실행 취소');
