@@ -115,8 +115,7 @@ def _preview(abc: str) -> dict:
                     natural = 12 * (octave + 1) + {'C': 0, 'D': 2, 'E': 4, 'F': 5, 'G': 7, 'A': 9, 'B': 11}[letter]
                     effective = event.midi - natural
                     expected = accidentals.get(step, key.accidentals.get(letter, 0))
-                    accidental = effective if (event.accidental is not None or
-                                               (effective != expected and not event.tie_from_previous)) else None
+                    accidental = effective if effective != expected and not event.tie_from_previous else None
                     accidentals[step] = effective
                     note = {'step': step, 'accidental': accidental, 'midi': event.midi}
                 full_rest = isinstance(event, Rest) and event.duration == bar.meter.duration == bar.duration
