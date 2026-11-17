@@ -38,6 +38,8 @@ app.registerExtension({
             this.addDOMWidget("score", "score", view.element, {
                 serialize: false,
                 hideOnZoom: false,
+                // This widget owns one DOM element; do not mount it again in the inspector.
+                hideInPanel: true,
                 getMinHeight: () => editor ? 700 : 440,
             });
             this.setSize([Math.max(this.size[0], editor ? 1040 : 820), Math.max(this.size[1], editor ? 850 : 560)]);
