@@ -1,8 +1,12 @@
 # ComfyUI-YuE2-HumComposer
 
-A work-in-progress ComfyUI extension for incorporating hummed melodies into YuE2-generated songs. It combines SheetSage2 transcription with ABC-based melody placement, variation, and score editing.
+A work-in-progress ComfyUI custom node package for incorporating hummed melodies into YuE2-generated songs. It combines SheetSage2 transcription with ABC-based melody placement, variation, and score editing.
 
 **Experimental and under active development.** The workflow can be run, but features, compatibility, and output quality are still being validated.
+
+## Requirements
+
+This custom node package runs on ComfyUI's native YuE2 setup, with SheetSage2 used for optional humming transcription. Existing model configurations can be reused.
 
 ## Getting started
 
