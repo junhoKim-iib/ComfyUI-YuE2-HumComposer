@@ -23,7 +23,7 @@ class CreateMelodyAnchor:
             'target_voice': (['Vocal','Ins'],),
             'variation_amount': ('FLOAT',{'default':.25,'min':0.0,'max':1.0,'step':.05}),
             'seed': ('INT',{'default':0,'min':0,'max':0xffffffffffffffff}),
-            'source': ('STRING',{'default':'','tooltip':'Optional preceding anchor ID, e.g. chorus#1. Leave abc empty.'}),
+            'source': ('STRING',{'default':'','tooltip':'Fallback preceding anchor ID, e.g. chorus#1. Used only when abc is empty; supplied ABC takes priority.'}),
         },'optional': {'enabled': ('BOOLEAN',{'default':True,'tooltip':'Disabled anchors do not require ABC and leave the base plan unchanged.'})}}
 
     def create(self, abc: str, section: str, occurrence: str = 'all', mode: str = 'LOCK',
@@ -32,6 +32,7 @@ class CreateMelodyAnchor:
                variation_amount: float = .25, seed: int = 0, source: str = '', enabled: bool = True) -> tuple:
         if not enabled:
             return (None,)
+        source = '' if abc.strip() else source.strip()
         return (MelodyAnchor(section,occurrence,abc,mode,strength,fit_policy,transpose_policy,
                              harmony_policy,source_voice,target_voice,variation_amount,seed,source),)
 

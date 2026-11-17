@@ -214,7 +214,8 @@ def compose_song(base_abc: str, anchors: tuple[MelodyAnchor, ...], global_key: s
         raise TypeError('Expected an anchor collection')
     base = parse_abc(base_abc)
     require_valid(base,native=True)
-    if anchors and not any(s.name!='unsectioned' for s in base.sections):
+    if (anchors and not any(s.name!='unsectioned' for s in base.sections)
+            and any(anchor.start_measure is None for anchor in anchors)):
         raise ValueError('Base plan needs named sections from a complete YuE2 ABC plan')
     key = parse_key(global_key) if global_key.strip() else None
     report = ['GLOBAL KEY: '+(key.text if key else 'base local keys'), 'ANCHORS']
@@ -222,7 +223,7 @@ def compose_song(base_abc: str, anchors: tuple[MelodyAnchor, ...], global_key: s
         report.append('No active melody anchors; base plan unchanged.')
     warnings: list[str] = [i.message for i in validate_score(base,native=True) if i.severity=='warning']
     edits = {}
-    expected: dict[tuple[str,int],tuple[Tone, ...]] = {}
+    expected: dict[tuple[str,int,int],tuple[Tone, ...]] = {}
     preserved_chords: dict[tuple[str,int],tuple] = {}
     sources: dict[str,str] = {}
     for anchor in anchors:
@@ -244,6 +245,11 @@ def compose_song(base_abc: str, anchors: tuple[MelodyAnchor, ...], global_key: s
                 raise ValueError('Harmony edits require target_voice=Vocal; Ins anchors support keep_base/recommend_only')
             sources[section.id] = abc
             selected = section.range_for(anchor.target_voice)
+            if anchor.start_measure is not None:
+                if not selected.start_measure <= anchor.start_measure < anchor.end_measure <= selected.end_measure:
+                    raise ValueError(f'{section.id}: anchor measure range is outside its section')
+                selected = replace(selected,start_measure=anchor.start_measure,end_measure=anchor.end_measure)
+                report.append(f'  RANGE: bars {selected.start_measure+1}-{selected.end_measure}')
             bars = base.voice(anchor.target_voice).measures[selected.start_measure:selected.end_measure]
             if bars[0].notes and bars[0].notes[0].tie_from_previous or bars[-1].notes and bars[-1].notes[-1].tie_to_next:
                 raise ValueError(f'{section.id}: tie crosses target boundary; cannot replace safely')
@@ -329,7 +335,7 @@ def compose_song(base_abc: str, anchors: tuple[MelodyAnchor, ...], global_key: s
                 if anchor.harmony_policy in ('keep_base','recommend_only'):
                     preserved_chords[(anchor.target_voice,b.index)] = tuple((c.text,c.onset) for c in b.chords)
                 start += b.duration
-            expected[(anchor.target_voice,selected.start_measure)] = tones
+            expected[(anchor.target_voice,selected.start_measure,selected.end_measure)] = tones
     result_text = rewrite_measures(base,edits)
     final = parse_abc(result_text)
     require_valid(final,native=True)
@@ -345,13 +351,11 @@ def compose_song(base_abc: str, anchors: tuple[MelodyAnchor, ...], global_key: s
         for b in v.measures:
             if (v.id,b.index) not in edits and _bar_signature(b)!=_bar_signature(after.measures[b.index]):
                 raise ValueError(f'Internal invariant failure: non-target {v.id} bar {b.index+1} changed')
-    for (voice_id,index),tones in expected.items():
-        section = next(s for s in final.sections if s.range_for(voice_id).start_measure==index)
-        r = section.range_for(voice_id)
-        bars = final.voice(voice_id).measures[r.start_measure:r.end_measure]
+    for (voice_id,start,end),tones in expected.items():
+        bars = final.voice(voice_id).measures[start:end]
         wanted = tuple((t.midi,t.onset+bars[0].onset,t.duration) for t in tones if t.midi is not None)
         if _sounding_signature(bars)!=wanted:
-            raise ValueError(f'Internal invariant failure: anchor melody changed in {section.id}')
+            raise ValueError(f'Internal invariant failure: anchor melody changed in {voice_id} bars {start+1}-{end}')
     if warnings and strictness=='warnings_as_errors':
         raise ValueError('Composition warnings treated as errors:\n'+'\n'.join(warnings))
     report += ['WARNINGS']+ (warnings or ['none'])

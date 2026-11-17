@@ -15,13 +15,17 @@ class HumMelodyAnalyze:
         return {'required': {'abc': ('STRING',{'multiline':True}),
                              'voice': (['auto','Vocal','Ins'],)},
                 'optional': {'enabled': ('BOOLEAN', {'default': True,
-                    'tooltip': 'Use this melody. False skips upstream audio validation and transcription.'})}}
+                    'tooltip': 'Use this melody. False skips upstream audio validation and transcription.'}),
+                             'source_report': ('STRING', {'forceInput': True})}}
 
-    def analyze(self, abc: str, voice: str = 'auto', enabled: bool = True) -> tuple:
+    def analyze(self, abc: str, voice: str = 'auto', enabled: bool = True, source_report: str = '') -> tuple:
         if not enabled or not abc.strip():
             return None,'No melody input; the generated base plan is retained.',''
         analysis = analyze_melody(abc,voice)
-        return analysis,analysis_report(analysis),serialize(analysis.score)
+        summary = analysis_report(analysis)
+        if source_report:
+            summary += '\n\n' + source_report
+        return analysis,summary,serialize(analysis.score)
 
 
 class KeyModeCandidates:

@@ -19,6 +19,8 @@ class MelodyAnchor:
     variation_amount: float = .25
     seed: int = 0
     source: str = ''
+    start_measure: int | None = None
+    end_measure: int | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self,'section',normalize_section_name(self.section))
@@ -43,6 +45,11 @@ class MelodyAnchor:
             raise ValueError('LOCK requires strength=1; strength scales VARIATION only')
         if self.mode != 'AI' and not self.abc.strip() and not self.source:
             raise ValueError('Active anchor needs ABC or an explicit source anchor ID')
+        if self.start_measure is not None or self.end_measure is not None:
+            if (isinstance(self.start_measure, bool) or not isinstance(self.start_measure, int)
+                    or isinstance(self.end_measure, bool) or not isinstance(self.end_measure, int)
+                    or not 0 <= self.start_measure < self.end_measure):
+                raise ValueError('Anchor measure range must contain increasing nonnegative integer indices')
 
 
 def append_anchor(anchor: MelodyAnchor | None, previous: tuple[MelodyAnchor, ...] = ()) -> tuple[MelodyAnchor, ...]:

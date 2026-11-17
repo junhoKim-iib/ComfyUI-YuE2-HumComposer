@@ -50,6 +50,8 @@ def register_routes() -> None:
     if server is None or not hasattr(server.PromptServer, 'instance'):
         return
     server.PromptServer.instance.add_on_prompt_handler(prepare_optional_audio)
+    from .nodes.generate import prepare_required_generation
+    server.PromptServer.instance.add_on_prompt_handler(prepare_required_generation)
     from aiohttp import web
 
     @server.PromptServer.instance.routes.post('/humcomposer/score')

@@ -11,7 +11,7 @@ def prepare_optional_audio(data: dict) -> dict:
     def collect_audio(node_id):
         node = prompt.get(node_id, {})
         if node_id in candidates or node.get('class_type') not in (
-                'LoadAudio', 'AudioEncoderLoader', 'SheetSage2AudioToABC'):
+                'LoadAudio', 'AudioEncoderLoader', 'SheetSage2AudioToABC', 'YuE2HumTranscribe'):
             return
         candidates.add(node_id)
         for value in node.get('inputs', {}).values():
@@ -33,7 +33,10 @@ def prepare_optional_audio(data: dict) -> dict:
         # Change only the queued copy; retain the user's canvas connections.
         if updated is None:
             updated = dict(prompt)
-        updated[node_id] = {**node, 'inputs': {**inputs, 'abc': ''}}
+        disconnected = {**inputs, 'abc': ''}
+        if 'source_report' in disconnected:
+            disconnected['source_report'] = ''
+        updated[node_id] = {**node, 'inputs': disconnected}
         abc = inputs.get('abc')
         if isinstance(abc, list) and len(abc) == 2:
             collect_audio(abc[0])
