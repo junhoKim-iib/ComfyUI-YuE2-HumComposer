@@ -1,10 +1,48 @@
+# Python caches
 __pycache__/
 *.py[cod]
+
+# Local Python environments
+/.venv/
+/venv/
+/env/
+
+# Build artifacts
+*.egg-info/
+build/
+dist/
+
+# Test and analysis artifacts
 .pytest_cache/
 .test-deps/
 .native-smoke/
 .native-gpu-smoke/
 .native-sheetsage-smoke/
-*.egg-info/
-build/
-dist/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Local environment settings
+.env
+.env.*
+!.env.example
+
+# Local models and runtime data
+/models/
+/input/
+/output/
+/tmp/
+
+# Local development documents
+/docs-local/
+/examples-local/
+/tests/
+# Local logs
+*.log
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+Desktop.ini
