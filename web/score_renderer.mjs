@@ -232,6 +232,7 @@ export function renderScore(payload, { voiceId = "all", page = 0, barsPerLine = 
     }
     const width = Math.max(960, ...rows.map((row) => row.width));
     const root = svg(null, "svg", { xmlns: NS, role: "img", "aria-label": payload.title });
+    root.scoreLayout = [];
     svg(root, "title", {}, payload.title);
     const background = svg(root, "rect", { width: "100%", height: "100%", fill: "white" });
     text(root, 24, 34, payload.title, 21, { "font-weight": 600 });
@@ -266,6 +267,10 @@ export function renderScore(payload, { voiceId = "all", page = 0, barsPerLine = 
             for (let barIndex = 0; barIndex < row.bars.length; barIndex++) {
                 const layout = row.bars[barIndex];
                 const bar = voice.measures[layout.index];
+                root.scoreLayout.push({ voice: voice.id, measure: layout.index,
+                    onset: value(bar.onset), duration: value(bar.duration), top: top - 12, bottom: top + maxY + 14,
+                    points: [...layout.ticks.map(slot => ({ at: slot.time, x: layout.xAt([slot.time, 1]) })),
+                        { at: value(bar.duration), x: layout.right - 4 }] });
                 const previous = voice.measures[layout.index - 1];
                 if (voice === voices[0]) {
                     text(group, layout.left + 2, chordY - 22, bar.index + 1, 10, { fill: "#6a7889" });
@@ -352,7 +357,7 @@ export function renderScore(payload, { voiceId = "all", page = 0, barsPerLine = 
     return root;
 }
 
-export function createScoreView({ onSelect } = {}) {
+export function createScoreView({ onSelect, onSeek, seekGrid = () => 16 } = {}) {
     const element = document.createElement("div");
     element.style.cssText = "width:100%;height:100%;min-height:320px";
     const shadow = element.attachShadow({ mode: "open" });
@@ -408,6 +413,8 @@ export function createScoreView({ onSelect } = {}) {
     let zoom = 1;
     let currentSvg;
     let selection;
+    let playhead;
+    let followSuspendedUntil = 0;
     const urls = new Set();
 
     function highlight() {
@@ -419,19 +426,68 @@ export function createScoreView({ onSelect } = {}) {
             note.toggleAttribute('data-selected', Boolean(active));
         }
     }
-    if (onSelect) {
+    if (onSelect || onSeek) {
         paper.classList.add('editable');
         paper.addEventListener('click', (event) => {
             const target = event.target.closest('[data-kind="note"],[data-kind="rest"]');
-            if (!target) return;
+            if (!target) {
+                if (!onSeek || !currentSvg) return;
+                const point = currentSvg.createSVGPoint(); point.x = event.clientX; point.y = event.clientY;
+                const local = point.matrixTransform(currentSvg.getScreenCTM().inverse());
+                const region = currentSvg.scoreLayout.find(area => local.y >= area.top - 30 && local.y <= area.bottom + 20 &&
+                    local.x >= area.points[0].x - 35 && local.x <= area.points.at(-1).x + 4);
+                if (!region) return;
+                const points = region.points;
+                const right = points.findIndex(p => p.x >= local.x);
+                let at = right === -1 ? region.duration : points[0].at;
+                if (right > 0) {
+                    const left = points[right - 1], next = points[right];
+                    at = left.at + (next.at - left.at) * (local.x - left.x) / (next.x - left.x);
+                }
+                const unit = seekGrid();
+                onSeek({ voice: region.voice, measure: region.measure,
+                    offset: Math.max(0, Math.min(region.duration, Math.round(at * unit) / unit)) });
+                return;
+            }
             selection = { voice: target.closest('[data-voice]').getAttribute('data-voice'),
                 measure: Number(target.getAttribute('data-measure')),
                 offset: target.getAttribute('data-offset').split('/').map(Number),
                 duration: target.getAttribute('data-duration').split('/').map(Number),
                 midi: target.hasAttribute('data-midi') ? Number(target.getAttribute('data-midi')) : null };
             highlight();
-            onSelect(selection);
+            onSelect?.(selection);
         });
+    }
+
+    function showPlayhead(follow = false) {
+        follow &&= performance.now() >= followSuspendedUntil;
+        if (!currentSvg) return;
+        currentSvg.querySelector('[data-playhead]')?.remove();
+        if (!playhead) return;
+        const part = payload.voices.find(v => v.id === (voices.value === 'all' ? playhead.voice : voices.value)) ?? payload.voices[0];
+        const bar = part.measures.find(b => playhead.at < value(b.onset) + value(b.duration) - 1e-8) ?? part.measures.at(-1);
+        const targetPage = Math.floor(bar.index / PAGE_BARS);
+        if (follow && page !== targetPage) { page = targetPage; viewport.scrollTop = 0; draw(); return; }
+        const area = currentSvg.scoreLayout.find(a => a.voice === part.id && a.measure === bar.index);
+        if (!area) return;
+        const at = Math.max(0, Math.min(area.duration, playhead.at - area.onset));
+        const points = area.points;
+        const nextIndex = points.findIndex(point => point.at >= at);
+        let x = nextIndex === -1 ? points.at(-1).x : points[0].x;
+        if (nextIndex > 0) {
+            const left = points[nextIndex - 1], right = points[nextIndex];
+            x = left.x + (right.x - left.x) * (at - left.at) / (right.at - left.at);
+        }
+        const row = currentSvg.scoreLayout.filter(a => a.measure === bar.index);
+        const cursor = svg(currentSvg, 'line', { x1: x, x2: x,
+            y1: Math.min(...row.map(a => a.top)), y2: Math.max(...row.map(a => a.bottom)),
+            stroke: '#dc6328', 'stroke-width': 1.5, 'vector-effect': 'non-scaling-stroke',
+            'pointer-events': 'none', 'data-playhead': '', 'data-position': playhead.at, 'aria-hidden': 'true' });
+        if (follow && viewport.clientHeight) {
+            const rect = cursor.getBoundingClientRect(), bounds = viewport.getBoundingClientRect();
+            if (rect.top < bounds.top + 10 || rect.bottom > bounds.bottom - 10) viewport.scrollTop += rect.top - bounds.top - 20;
+            if (rect.left < bounds.left + 10 || rect.right > bounds.right - 10) viewport.scrollLeft += rect.left - bounds.left - 40;
+        }
     }
 
     function draw() {
@@ -456,6 +512,7 @@ export function createScoreView({ onSelect } = {}) {
             currentSvg = renderScore(payload, { voiceId: voices.value, page, barsPerLine: Number(measures.value) });
             paper.append(currentSvg);
             highlight();
+            showPlayhead();
             paper.style.width = `${zoom * 100}%`;
             zoomText.textContent = `${Math.round(zoom * 100)}%`;
             pageText.textContent = `${page + 1} / ${pages} · ${page * PAGE_BARS + 1}–${Math.min(total, (page + 1) * PAGE_BARS)} / ${total} 마디`;
@@ -492,11 +549,15 @@ export function createScoreView({ onSelect } = {}) {
     batches.addEventListener("change", selectResult);
     voices.addEventListener("change", () => { page = 0; viewport.scrollTop = 0; draw(); });
     measures.addEventListener("change", draw);
-    previous.addEventListener("click", () => { page--; viewport.scrollTop = 0; draw(); });
-    next.addEventListener("click", () => { page++; viewport.scrollTop = 0; draw(); });
+    previous.addEventListener("click", () => { followSuspendedUntil = performance.now() + 2000; page--; viewport.scrollTop = 0; draw(); });
+    next.addEventListener("click", () => { followSuspendedUntil = performance.now() + 2000; page++; viewport.scrollTop = 0; draw(); });
+    for (const event of ['wheel', 'pointerdown']) viewport.addEventListener(event, () => { followSuspendedUntil = performance.now() + 2000; }, { passive: true });
     minus.addEventListener("click", () => { zoom = Math.max(.5, zoom - .25); draw(); });
     plus.addEventListener("click", () => { zoom = Math.min(3, zoom + .25); draw(); });
-    saveSvg.addEventListener("click", () => download(new XMLSerializer().serializeToString(currentSvg), "image/svg+xml;charset=utf-8", `yue2-score-page-${page + 1}.svg`));
+    saveSvg.addEventListener("click", () => {
+        const copy = currentSvg.cloneNode(true); copy.querySelector('[data-playhead]')?.remove();
+        download(new XMLSerializer().serializeToString(copy), "image/svg+xml;charset=utf-8", `yue2-score-page-${page + 1}.svg`);
+    });
     saveAbc.addEventListener("click", () => download(payload.source, "text/plain;charset=utf-8", "yue2-score.abc"));
     // Consume score interactions so canvas dragging/shortcuts do not steal them.
     for (const type of ["pointerdown", "keydown", "wheel"]) element.addEventListener(type, (event) => event.stopPropagation());
@@ -517,6 +578,11 @@ export function createScoreView({ onSelect } = {}) {
                 if (voices.value !== 'all') voices.value = selection.voice;
                 draw();
             } else highlight();
+        },
+        setPlayhead(at, { voice, follow = false, force = false } = {}) {
+            if (force) followSuspendedUntil = 0;
+            playhead = at === null ? undefined : { at, voice };
+            showPlayhead(follow);
         },
         destroy() {
             for (const url of urls) URL.revokeObjectURL(url);

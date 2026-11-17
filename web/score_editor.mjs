@@ -9,6 +9,76 @@ const names = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B�
 const pitchName = (midi) => names[midi % 12] + (Math.floor(midi / 12) - 1);
 const computerKeys = 'awsedftgyhujk';
 
+export function playbackClock(part, tempo) {
+    const tempoRate = (text) => {
+        const match = text?.match(/^([\d/]+) = ([\d/]+)$/);
+        if (!match) return 60 / (104 / 4);
+        const parse = (s) => { const [n, d = 1] = s.split('/').map(Number); return n / d; };
+        return 60 / (parse(match[1]) * parse(match[2]));
+    };
+    const changes = [{ at: 0, rate: tempoRate(tempo) }];
+    for (const bar of part.measures) for (const event of bar.events) {
+        if (event.kind === 'tempo') changes.push({ at: value(bar.onset) + value(event.offset), rate: tempoRate(event.text) });
+    }
+    changes.sort((a, b) => a.at - b.at);
+    const segments = [];
+    for (const change of changes) {
+        const previous = segments.at(-1);
+        if (previous?.at === change.at) { previous.rate = change.rate; continue; }
+        segments.push({ ...change, time: previous ? previous.time + (change.at - previous.at) * previous.rate : 0 });
+    }
+    const segmentAt = (at, field) => {
+        let low = 0, high = segments.length;
+        while (low + 1 < high) {
+            const mid = Math.floor((low + high) / 2);
+            if (segments[mid][field] <= at) low = mid; else high = mid;
+        }
+        return segments[low];
+    };
+    return {
+        secondsAt(at) { const segment = segmentAt(at, 'at'); return segment.time + (at - segment.at) * segment.rate; },
+        positionAt(seconds) { const segment = segmentAt(seconds, 'time'); return segment.at + (seconds - segment.time) / segment.rate; },
+    };
+}
+
+export function playbackTimeline(score, start = [0, 1], voiceId) {
+    const origin = value(start);
+    const notes = [];
+    let duration = 0;
+    for (const part of score.voices.filter((voice) => !voiceId || voice.id === voiceId)) {
+        const { secondsAt } = playbackClock(part, score.tempo);
+        const tones = [];
+        const tied = new Map();
+        let end = 0;
+        for (const bar of part.measures) {
+            end = Math.max(end, value(bar.onset) + value(bar.duration));
+            for (const event of bar.events) {
+                const at = value(bar.onset) + value(event.offset);
+                if (event.kind !== 'note') continue;
+                const previous = tied.get(event.midi);
+                let tone;
+                if (event.tieIn && previous && Math.abs(previous.end - at) < 1e-8) {
+                    tone = previous; tone.end = at + value(event.duration);
+                } else {
+                    tone = { midi: event.midi, start: at, end: at + value(event.duration) };
+                    tones.push(tone);
+                }
+                if (event.tieOut) tied.set(event.midi, tone);
+                else tied.delete(event.midi);
+            }
+        }
+        const offset = secondsAt(origin);
+        duration = Math.max(duration, secondsAt(end) - offset);
+        for (const tone of tones) {
+            if (tone.end <= origin) continue;
+            const at = secondsAt(Math.max(origin, tone.start));
+            notes.push({ midi: tone.midi, start: at - offset, duration: secondsAt(tone.end) - at });
+        }
+    }
+    notes.sort((a, b) => a.start - b.start || a.midi - b.midi);
+    return { notes, duration };
+}
+
 export function createScoreEditor({ initialAbc, request, onChange, followInput, setFollowInput }) {
     const element = document.createElement('div');
     element.style.cssText = 'width:100%;height:100%;min-height:660px';
@@ -43,8 +113,10 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
     const load = html('button', toolbar, '입력 ABC 불러오기');
     const undo = html('button', toolbar, '실행 취소');
     const redo = html('button', toolbar, '다시 실행');
-    const play = html('button', toolbar, '현재 마디 재생');
+    const play = html('button', toolbar, '재생');
     const stop = html('button', toolbar, '정지');
+    const transportText = html('span', toolbar, '재생선 · 1마디 1박', 'hint');
+    transportText.setAttribute('aria-label', '재생 위치');
     const controls = html('div', root, undefined, 'toolbar');
     const voices = html('select', controls); voices.setAttribute('aria-label', '편집 성부');
     const addPart = html('button', controls, '성부 추가');
@@ -128,6 +200,11 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
     let audioVersion = 0;
     const oscillators = new Set();
     let lastAudition;
+    let playbackTimer;
+    let playbackActive = false;
+    let playhead = 0;
+    let playbackSession;
+    let playbackFrame;
     let dialog;
     let placeholder;
     const pressedKeys = new Set();
@@ -153,6 +230,61 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
     function currentVoice() { return payload?.voices.find((v) => v.id === voices.value); }
     function currentBar() { return currentVoice()?.measures[Number(measure.value) - 1]; }
     function durationRatio() { return duration.value.split('/').map(Number); }
+    const scoreEnd = (parts = payload?.voices ?? []) => Math.max(0, ...parts.map(part => {
+        const bar = part.measures.at(-1); return bar ? value(bar.onset) + value(bar.duration) : 0;
+    }));
+    const barAt = (part, at) => part?.measures.find(bar => at < value(bar.onset) + value(bar.duration) - 1e-8) ?? part?.measures.at(-1);
+    function playingPosition() {
+        if (!playbackSession || !audio) return playhead;
+        return Math.min(playbackSession.end, playbackSession.clock.positionAt(
+            playbackSession.origin + Math.max(0, audio.currentTime - playbackSession.startAt)));
+    }
+    function drawRollPlayhead() {
+        const bar = currentBar(), line = roll.querySelector('[data-roll-playhead]');
+        if (!bar || !line) return;
+        const offset = playhead - value(bar.onset);
+        line.hidden = offset < -1e-8 || offset > value(bar.duration) + 1e-8;
+        line.style.display = line.hidden ? 'none' : '';
+        const x = 64 + Math.max(0, offset) * Number(grid.value) * 32;
+        line.setAttribute('x1', x); line.setAttribute('x2', x); line.setAttribute('data-position', playhead);
+    }
+    function displayPlayhead(follow = false, force = false) {
+        if (!payload || destroyed) return;
+        playhead = Math.max(0, Math.min(scoreEnd(), playhead));
+        const bar = barAt(currentVoice(), playhead);
+        if (!bar) return;
+        if (follow && Number(measure.value) !== bar.index + 1) {
+            measure.value = bar.index + 1; cursor = [0, 1]; selected = undefined;
+            view.focus(undefined); drawPosition(); drawRoll();
+        }
+        const offset = Math.max(0, Math.min(value(bar.duration), playhead - value(bar.onset)));
+        const beat = offset * bar.meter[1] + 1;
+        const atEnd = Math.abs(offset - value(bar.duration)) < 1e-8;
+        transportText.textContent = `재생선 · ${bar.index + 1}마디 ${atEnd ? '끝' : `${Number(beat.toFixed(2))}박`}`;
+        root.dataset.playbackState = playbackActive ? 'playing' : 'stopped';
+        view.setPlayhead(playhead, { voice: voices.value, follow: follow && !notation.hidden, force });
+        drawRollPlayhead();
+        if (follow && !roll.hidden) {
+            const line = roll.querySelector('[data-roll-playhead]');
+            if (line) {
+                const x = Number(line.getAttribute('x1'));
+                if (x < roll.scrollLeft + 64 || x > roll.scrollLeft + roll.clientWidth - 20) roll.scrollLeft = Math.max(0, x - 100);
+            }
+        }
+    }
+    function seekTo(at) {
+        const resume = playbackActive;
+        if (resume) stopAudio(false);
+        playhead = Math.max(0, Math.min(scoreEnd(), at));
+        displayPlayhead(true, true);
+        const end = scoreEnd(playback.value === 'all' ? payload.voices : [currentVoice()]);
+        if (resume && playhead < end - 1e-8) void playFromPlayhead();
+        else if (resume) message('악보 끝으로 이동했습니다. 다시 재생하면 처음부터 시작합니다.');
+    }
+    function seekFromCursor() {
+        const bar = currentBar();
+        if (bar) seekTo(value(bar.onset) + value(cursor));
+    }
     function message(text, error = false) {
         status.textContent = text; status.classList.toggle('error', error);
     }
@@ -167,6 +299,7 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
         future.length = 0;
     }
     function commit(text, history = true) {
+        if (text !== draft && playbackActive) stopAudio();
         if (text !== draft && history) remember();
         draft = text; source.value = text; onChange(text); updateMode();
     }
@@ -192,7 +325,18 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
         chord.value = bar?.events.find((e) => e.kind === 'chord' && value(e.offset) === value(cursor))?.text ?? '';
         view.focus(next ?? (payload && { voice: voices.value, measure: Number(measure.value) - 1, offset: cursor })); drawRoll();
     }
-    const view = createScoreView({ onSelect: (next) => { focusSelection(next); if (next.midi !== null) sound(next.midi); } });
+    const view = createScoreView({
+        seekGrid: () => Number(grid.value),
+        onSelect: (next) => {
+            const playing = playbackActive;
+            focusSelection(next); seekFromCursor();
+            if (!playing && next.midi !== null) sound(next.midi);
+        },
+        onSeek: (next) => {
+            voices.value = next.voice; measure.value = next.measure + 1; cursor = ratio(Math.round(next.offset * Number(grid.value)), Number(grid.value));
+            selected = undefined; focusSelection(undefined); seekFromCursor();
+        },
+    });
     notation.append(view.element);
 
     function accept(next) {
@@ -211,7 +355,9 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
             selected = tone ? { ...selected, ...tone } : undefined;
         } else selected = undefined;
         focusSelection(selected);
+        displayPlayhead();
         const errors = next.messages.filter((m) => m.startsWith('ERROR'));
+        play.disabled = Boolean(errors.length);
         for (const button of [append, addPart, noteDown, noteUp, resize, erase, applyChord]) button.disabled = Boolean(errors.length);
         message(errors.length ? errors.join(' · ') : '편집본 반영됨 · 워크플로 저장 시 함께 보관 · 건반 / 롤 클릭 입력 · 드래그 이동 · 오른쪽 클릭 삭제', Boolean(errors.length));
         updateMode();
@@ -220,6 +366,7 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
     async function refresh() {
         const ticket = ++revision;
         payload = undefined; selected = undefined;
+        play.disabled = true;
         controller?.abort(); controller = new AbortController();
         message('악보 갱신 중…');
         try {
@@ -232,6 +379,7 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
         }
     }
     function cancelPending() {
+        stopAudio();
         epoch++; revision++; clearTimeout(timer); controller?.abort();
         pressedKeys.clear(); keyboardEntry = undefined;
     }
@@ -272,6 +420,7 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
             }
         }
         focusSelection(undefined);
+        seekFromCursor();
     }
     function enterPitch(midi) {
         sound(midi);
@@ -358,23 +507,29 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
                 role: 'button', tabindex: 0, 'aria-label': `${pitchName(tone.midi)} · ${tone.offset.join('/')} · ${tone.duration.join('/')}` });
             makeSvg(rect, 'title', {}, `${pitchName(tone.midi)} · 드래그 이동 / 오른쪽 가장자리로 길이 조절`);
         }
-        const cursorX = 64 + value(cursor) * unit * 32;
-        makeSvg(rootSvg, 'line', { x1: cursorX, x2: cursorX, y1: 24, y2: height, stroke: '#e06e25', 'stroke-width': 2, 'pointer-events': 'none' });
+        makeSvg(rootSvg, 'line', { x1: 64, x2: 64, y1: 0, y2: height, stroke: '#e06e25',
+            'stroke-width': 1.5, 'pointer-events': 'none', 'data-roll-playhead': '' });
+        drawRollPlayhead();
         let dragging;
         const position = (event) => {
             const point = rootSvg.createSVGPoint(); point.x = event.clientX; point.y = event.clientY;
             const local = point.matrixTransform(rootSvg.getScreenCTM().inverse());
             return { col: Math.max(0, Math.min(columns - 1, Math.floor((local.x - 64) / 32))),
-                midi: firstMidi + rows - 1 - Math.max(0, Math.min(rows - 1, Math.floor((local.y - 24) / 14))), x: local.x };
+                midi: firstMidi + rows - 1 - Math.max(0, Math.min(rows - 1, Math.floor((local.y - 24) / 14))), x: local.x, y: local.y };
         };
         rootSvg.addEventListener('contextmenu', (event) => event.preventDefault());
         rootSvg.addEventListener('pointerdown', (event) => {
             if (!payload) return;
             const note = event.target.closest('[data-roll-note]');
             const pos = position(event);
+            if (playbackActive || pos.y < 24) {
+                cursor = ratio(pos.col, unit); focusSelection(undefined); seekFromCursor();
+                event.preventDefault(); return;
+            }
             const original = note ? { offset: note.getAttribute('data-offset').split('/').map(Number),
                 duration: note.getAttribute('data-duration').split('/').map(Number), midi: Number(note.getAttribute('data-midi')) } : null;
-            dragging = { start: pos, original, x: event.clientX, y: event.clientY, erase: event.button === 2 || event.shiftKey,
+            dragging = { start: pos, original, x: event.clientX, y: event.clientY,
+                erase: event.button === 2 || event.shiftKey,
                 resize: note && pos.x > Number(note.getAttribute('x')) + Number(note.getAttribute('width')) - 7 };
             rootSvg.setPointerCapture(event.pointerId); event.preventDefault();
         });
@@ -385,7 +540,7 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
             const moved = Math.abs(event.clientX - drag.x) + Math.abs(event.clientY - drag.y) > 4;
             if (drag.original) {
                 const sel = { ...drag.original, voice: voices.value, measure: Number(measure.value) - 1 };
-                focusSelection(sel); sound(sel.midi);
+                focusSelection(sel); seekFromCursor(); sound(sel.midi);
                 if (drag.erase) enqueue(() => ({ ...paintAction(null, sel.offset, sel.duration, sel),
                     action: 'erase', erasePitch: sel.midi }));
                 else if (moved) {
@@ -398,7 +553,7 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
                         () => focusSelection({ ...action }));
                 }
             } else {
-                cursor = ratio(pos.col, unit); focusSelection(undefined);
+                cursor = ratio(pos.col, unit); focusSelection(undefined); seekFromCursor();
                 if (drag.erase) enqueue(() => paintAction(null));
                 else enterPitch(pos.midi);
             }
@@ -439,10 +594,17 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
         }
         return true;
     }
-    function stopAudio() {
+    function stopAudio(rememberPosition = true) {
+        if (rememberPosition && playbackActive) playhead = playingPosition();
         audioVersion++;
+        playbackActive = false;
+        playbackSession = undefined;
+        clearTimeout(playbackTimer); playbackTimer = undefined;
+        cancelAnimationFrame(playbackFrame); playbackFrame = undefined;
         for (const oscillator of oscillators) { try { oscillator.stop(); } catch (error) { if (error.name !== 'InvalidStateError') throw error; } }
         oscillators.clear(); clearTimeout(lastAudition);
+        play.disabled = !payload || payload.messages.some(message => message.startsWith('ERROR'));
+        displayPlayhead();
     }
     async function sound(midi, length = .3, delay = 0) {
         const version = audioVersion;
@@ -460,19 +622,54 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
                 oscillator.connect(envelope).connect(audio.destination); oscillator.start(at); oscillator.stop(at + Math.max(.08, length) + .02);
                 oscillators.add(oscillator); oscillator.onended = () => { oscillators.delete(oscillator); oscillator.disconnect(); envelope.disconnect(); };
             }
-        } catch (error) { message(`소리 미리듣기 오류: ${error.message}`, true); }
+        } catch (error) { if (!destroyed && version === audioVersion) message(`소리 미리듣기 오류: ${error.message}`, true); }
     }
-    function playMeasure() {
-        const bar = currentBar(); if (!bar) return;
-        stopAudio();
-        const match = payload.tempo?.match(/^([\d/]+) = ([\d/]+)$/);
-        const parse = (s) => { const [n, d = 1] = s.split('/').map(Number); return n / d; };
-        const seconds = match ? 60 / (parse(match[1]) * parse(match[2])) : 60 / (104 / 4);
+    async function playFromPlayhead() {
+        if (!payload || playbackActive) return;
+        stopAudio(false);
         const parts = playback.value === 'all' ? payload.voices : [currentVoice()];
-        for (const part of parts) for (const tone of part.measures[Number(measure.value) - 1]?.tones ?? []) {
-            if (tone.midi !== null) sound(tone.midi, value(tone.duration) * seconds, value(tone.offset) * seconds);
+        const end = scoreEnd(parts);
+        if (playhead >= end - 1e-8) playhead = 0;
+        const version = audioVersion;
+        const timeline = playbackTimeline(payload, [playhead, 1], playback.value === 'all' ? undefined : voices.value);
+        const clock = playbackClock(currentVoice(), payload.tempo);
+        playbackActive = true;
+        play.disabled = true; displayPlayhead(true, true);
+        try {
+            audio ??= new AudioContext();
+            if (audio.state === 'suspended') await audio.resume();
+            if (destroyed || version !== audioVersion) return;
+            if (audio.state !== 'running') throw new Error('오디오를 시작할 수 없습니다. 재생 버튼으로 다시 시도하세요.');
+            const startAt = audio.currentTime + .03;
+            playbackSession = { clock, origin: clock.secondsAt(playhead), startAt, end };
+            const animate = () => {
+                if (destroyed || version !== audioVersion || !playbackActive) return;
+                playhead = playingPosition(); displayPlayhead(true);
+                playbackFrame = requestAnimationFrame(animate);
+            };
+            let next = 0;
+            // Schedule a short window rather than creating oscillators for an entire song.
+            const schedule = () => {
+                if (destroyed || version !== audioVersion) return;
+                const elapsed = audio.currentTime - startAt;
+                playhead = playingPosition();
+                while (next < timeline.notes.length && timeline.notes[next].start < elapsed + .3) {
+                    const tone = timeline.notes[next++];
+                    const length = tone.duration - Math.max(0, elapsed - tone.start);
+                    if (length > 0) sound(tone.midi, length, Math.max(0, tone.start - elapsed));
+                }
+                if (elapsed >= timeline.duration + .1) {
+                    playhead = end; stopAudio(false); displayPlayhead(true, true);
+                    message('악보 끝까지 재생했습니다. 다시 재생하면 처음부터 시작합니다.'); return;
+                }
+                playbackTimer = setTimeout(schedule, 40);
+            };
+            message(`재생선부터 악보 끝까지 ${playback.value === 'all' ? '모든 성부' : '선택 성부'}를 재생합니다. 악보를 클릭하면 재생 위치가 이동합니다.`);
+            animate(); schedule();
+        } catch (error) {
+            if (destroyed || version !== audioVersion) return;
+            stopAudio(); message(`악보 재생 오류: ${error.message}`, true);
         }
-        message(`현재 마디의 ${playback.value === 'all' ? '모든 성부' : '선택 성부'}를 기본 Q: 템포로 재생합니다.`);
     }
 
     source.addEventListener('input', () => {
@@ -481,7 +678,7 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
     });
     load.addEventListener('click', () => {
         if (!inputSource) return;
-        cancelPending(); selected = undefined; cursor = [0, 1]; commit(inputSource); setFollowInput(true); updateMode(); refresh();
+        cancelPending(); playhead = 0; selected = undefined; cursor = [0, 1]; measure.value = 1; commit(inputSource); setFollowInput(true); updateMode(); refresh();
     });
     undo.addEventListener('click', () => {
         if (!past.length) return;
@@ -492,10 +689,18 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
         cancelPending(); past.push(draft); commit(future.pop(), false); setFollowInput(false); refresh();
     });
     const changeBar = () => { selected = undefined; cursor = [0, 1]; measure.max = currentVoice()?.measures.length ?? 1;
-        measure.value = Math.max(1, Math.min(Number(measure.value) || 1, Number(measure.max))); focusSelection(undefined); };
-    voices.addEventListener('change', changeBar); measure.addEventListener('change', changeBar);
+        measure.value = Math.max(1, Math.min(Number(measure.value) || 1, Number(measure.max))); focusSelection(undefined); seekFromCursor(); };
+    voices.addEventListener('change', () => {
+        if (playbackActive) playhead = playingPosition();
+        const bar = barAt(currentVoice(), playhead); if (!bar) return;
+        measure.max = currentVoice().measures.length; measure.value = bar.index + 1;
+        cursor = ratio(Math.round(Math.max(0, Math.min(value(bar.duration), playhead - value(bar.onset))) * Number(grid.value)), Number(grid.value));
+        focusSelection(undefined); seekTo(playhead);
+    });
+    measure.addEventListener('change', changeBar);
     grid.addEventListener('change', () => { drawPosition(); drawRoll(); });
-    position.addEventListener('change', () => { cursor = position.value.split('/').map(Number); focusSelection(undefined); });
+    position.addEventListener('change', () => { cursor = position.value.split('/').map(Number); focusSelection(undefined); seekFromCursor(); });
+    playback.addEventListener('change', () => { if (playbackActive) seekTo(playingPosition()); });
     addPart.addEventListener('click', () => enqueue(() => ({ action: 'add_voice', voice: voices.value,
         name: partName.value.trim(), clef: partClef.value }), (next) => {
         voices.value = next.addedVoice; measure.value = 1; changeBar();
@@ -517,8 +722,8 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
     });
     applyChord.addEventListener('click', () => enqueue(() => ({ action: 'chord', voice: voices.value,
         measure: Number(measure.value) - 1, offset: cursor, chord: chord.value.trim() })));
-    staffTab.addEventListener('click', () => { notation.hidden = false; roll.hidden = true; staffTab.setAttribute('aria-pressed', 'true'); rollTab.setAttribute('aria-pressed', 'false'); });
-    rollTab.addEventListener('click', () => { notation.hidden = true; roll.hidden = false; staffTab.setAttribute('aria-pressed', 'false'); rollTab.setAttribute('aria-pressed', 'true'); drawRoll(); });
+    staffTab.addEventListener('click', () => { notation.hidden = false; roll.hidden = true; staffTab.setAttribute('aria-pressed', 'true'); rollTab.setAttribute('aria-pressed', 'false'); displayPlayhead(true, true); });
+    rollTab.addEventListener('click', () => { notation.hidden = true; roll.hidden = false; staffTab.setAttribute('aria-pressed', 'false'); rollTab.setAttribute('aria-pressed', 'true'); drawRoll(); displayPlayhead(true, true); });
     staffTab.setAttribute('aria-pressed', 'true'); rollTab.setAttribute('aria-pressed', 'false');
     function changeFirstPitch(midi) {
         firstPitch.value = Math.max(0, Math.min(115, midi));
@@ -527,7 +732,9 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
     }
     firstPitch.addEventListener('change', () => changeFirstPitch(Number(firstPitch.value)));
     for (const [button, delta] of [[octaveDown, -12], [octaveUp, 12]]) button.addEventListener('click', () => changeFirstPitch(Number(firstPitch.value) + delta));
-    play.addEventListener('click', playMeasure); stop.addEventListener('click', stopAudio);
+    play.addEventListener('click', playFromPlayhead); stop.addEventListener('click', () => {
+        stopAudio(); displayPlayhead(true, true); message('재생을 정지했습니다. 재생하면 현재 재생선에서 이어집니다.');
+    });
     root.addEventListener('keydown', (event) => {
         if (['TEXTAREA', 'INPUT', 'SELECT'].includes(event.target.tagName)) return;
         if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') { event.preventDefault(); (event.shiftKey ? redo : undo).click(); return; }
@@ -572,13 +779,14 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
     drawKeyboard(); updateMode();
     return {
         element,
-        loadDraft(text) { cancelPending(); commit(text, false); past.length = future.length = 0; updateMode(); refresh(); },
+        loadDraft(text) { cancelPending(); playhead = 0; selected = undefined; cursor = [0, 1]; measure.value = 1;
+            commit(text, false); past.length = future.length = 0; updateMode(); refresh(); },
         update(results) {
             const result = results[0]; if (!result) return;
             const changedInput = inputSource && result.inputSource && inputSource !== result.inputSource;
             inputSource = result.inputSource ?? '';
             if (followInput() && result.followInput && inputSource && draft !== inputSource) {
-                cancelPending(); commit(inputSource); accept(result);
+                cancelPending(); playhead = 0; selected = undefined; cursor = [0, 1]; measure.value = 1; commit(inputSource); accept(result);
             }
             if (changedInput && !followInput()) message('새 입력 ABC가 도착했습니다. 편집본은 유지했으며, 입력 ABC 불러오기로 전환할 수 있습니다.');
             updateMode();

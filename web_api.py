@@ -1,6 +1,7 @@
-"""Stateless local preview/edit endpoint. No queue, model or filesystem operations."""
+"""Local score endpoints and cache policy for this extension's static modules."""
 import asyncio
 from fractions import Fraction
+from pathlib import Path
 import sys
 
 from .humcomposer.abc.editing import paint_interval, edit_chord, append_measure, add_voice
@@ -44,11 +45,26 @@ def handle_score_request(data: dict) -> dict:
     return payload
 
 
+def register_module_cache(app, directory) -> None:
+    directory = Path(directory).resolve()
+
+    async def prepare_module(request, response):
+        if not request.path.endswith('.mjs') or response.status not in (200, 206, 304):
+            return
+        resource = request.match_info.route.resource
+        if resource is not None and resource.get_info().get('directory') == directory:
+            # Keep ETag/Last-Modified validation and 304 responses; require a freshness check.
+            response.headers['Cache-Control'] = 'no-cache'
+
+    app.on_response_prepare.append(prepare_module)
+
+
 def register_routes() -> None:
     # Headless loader tests can import the nodes without a running PromptServer.
     server = sys.modules.get('server')
     if server is None or not hasattr(server.PromptServer, 'instance'):
         return
+    register_module_cache(server.PromptServer.instance.app, Path(__file__).parent / 'web')
     server.PromptServer.instance.add_on_prompt_handler(prepare_optional_audio)
     from .nodes.generate import prepare_required_generation
     server.PromptServer.instance.add_on_prompt_handler(prepare_required_generation)
