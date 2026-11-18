@@ -1,0 +1,336 @@
+{
+    "YuE2HumMelodyAnalyze": {
+        "display_name": "YuE2 허밍 멜로디 분석",
+        "description": "ABC 멜로디의 리듬, 음역과 조성 근거를 분석합니다.",
+        "inputs": {
+            "abc": {
+                "name": "ABC"
+            },
+            "voice": {
+                "name": "성부"
+            },
+            "enabled": {
+                "name": "사용",
+                "tooltip": "멜로디를 사용합니다. 끄면 상위 오디오 검증·채보를 건너뜁니다."
+            },
+            "source_report": {
+                "name": "입력 보고서"
+            }
+        },
+        "outputs": {
+            "0": {
+                "name": "멜로디 분석"
+            },
+            "1": {
+                "name": "분석 요약"
+            },
+            "2": {
+                "name": "정규화 ABC"
+            }
+        }
+    },
+    "YuE2KeyModeCandidates": {
+        "display_name": "YuE2 조성·모드 후보",
+        "description": "휴리스틱 적합도로 조성·모드 후보를 정렬합니다.",
+        "inputs": {
+            "analysis": {
+                "name": "멜로디 분석"
+            },
+            "include_modes": {
+                "name": "모드 포함"
+            },
+            "candidate_count": {
+                "name": "후보 수"
+            }
+        },
+        "outputs": {
+            "0": {
+                "name": "조성 후보"
+            },
+            "1": {
+                "name": "보고서"
+            }
+        }
+    },
+    "YuE2ChordProgressionRecommend": {
+        "display_name": "YuE2 코드 진행 추천",
+        "description": "멜로디와 선택한 조성을 바탕으로 코드 진행을 추천합니다.",
+        "inputs": {
+            "analysis": {
+                "name": "멜로디 분석"
+            },
+            "selected_key": {
+                "name": "선택 조성"
+            },
+            "selected_mode": {
+                "name": "선택 모드"
+            },
+            "bars": {
+                "name": "마디 수"
+            },
+            "complexity": {
+                "name": "코드 복잡도"
+            },
+            "candidate_count": {
+                "name": "후보 수"
+            },
+            "candidate_index": {
+                "name": "후보 번호"
+            },
+            "candidates": {
+                "name": "조성 후보"
+            }
+        },
+        "outputs": {
+            "0": {
+                "name": "코드 추천"
+            },
+            "1": {
+                "name": "보고서"
+            }
+        }
+    },
+    "YuE2MelodyAnchor": {
+        "display_name": "YuE2 멜로디 앵커",
+        "description": "길이 맞춤, 조옮김, 화성 정책을 지정해 구간에 멜로디를 배치합니다.",
+        "inputs": {
+            "abc": {
+                "name": "ABC"
+            },
+            "section": {
+                "name": "구간"
+            },
+            "occurrence": {
+                "name": "적용 회차"
+            },
+            "mode": {
+                "name": "모드"
+            },
+            "strength": {
+                "name": "강도"
+            },
+            "fit_policy": {
+                "name": "길이 맞춤 정책"
+            },
+            "transpose_policy": {
+                "name": "조옮김 정책"
+            },
+            "harmony_policy": {
+                "name": "화성 정책"
+            },
+            "source_voice": {
+                "name": "입력 성부"
+            },
+            "target_voice": {
+                "name": "대상 성부"
+            },
+            "variation_amount": {
+                "name": "변형 정도"
+            },
+            "seed": {
+                "name": "시드"
+            },
+            "source": {
+                "name": "대체 앵커 ID",
+                "tooltip": "앞선 앵커 ID(예: chorus#1)를 대체 입력으로 사용합니다. ABC가 비어 있을 때만 적용되며 입력 ABC가 우선합니다."
+            },
+            "enabled": {
+                "name": "사용",
+                "tooltip": "끄면 ABC 입력 없이 기본 구성을 그대로 유지합니다."
+            }
+        },
+        "outputs": {
+            "0": {
+                "name": "멜로디 앵커"
+            }
+        }
+    },
+    "YuE2AppendMelodyAnchor": {
+        "display_name": "YuE2 멜로디 앵커 추가",
+        "description": "사용 중인 멜로디 앵커를 기존 앵커 모음에 추가합니다.",
+        "inputs": {
+            "anchor": {
+                "name": "멜로디 앵커"
+            },
+            "previous": {
+                "name": "기존 앵커"
+            }
+        },
+        "outputs": {
+            "0": {
+                "name": "멜로디 앵커 모음"
+            }
+        }
+    },
+    "YuE2HumSongComposer": {
+        "display_name": "YuE2 허밍 작곡",
+        "description": "생성된 ABC 곡에 멜로디 앵커와 메인 테마를 병합합니다.",
+        "inputs": {
+            "base_abc": {
+                "name": "기본 ABC"
+            },
+            "global_key": {
+                "name": "전체 조성",
+                "tooltip": "비우면 대상 구간의 조성을 사용합니다(예: C, A minor). 기본 ABC의 조성은 바꾸지 않습니다."
+            },
+            "transpose_policy": {
+                "name": "조옮김 정책"
+            },
+            "strictness": {
+                "name": "검증 엄격도"
+            },
+            "anchors": {
+                "name": "멜로디 앵커 모음"
+            },
+            "main_theme": {
+                "name": "메인 테마",
+                "tooltip": "곡의 메인 멜로디입니다. chorus나 특정 구간 이름이 없어도 사용할 수 있습니다."
+            }
+        },
+        "outputs": {
+            "0": {
+                "name": "최종 ABC"
+            },
+            "1": {
+                "name": "작곡 보고서"
+            },
+            "2": {
+                "name": "검증 보고서"
+            }
+        }
+    },
+    "YuE2ABCValidate": {
+        "display_name": "YuE2 ABC 검증",
+        "description": "ABC 문법을 검사하고 선택적으로 기본 곡 구조를 검증합니다.",
+        "inputs": {
+            "abc": {
+                "name": "ABC"
+            },
+            "native_song": {
+                "name": "기본 곡 형식 검증"
+            }
+        },
+        "outputs": {
+            "0": {
+                "name": "유효 여부"
+            },
+            "1": {
+                "name": "보고서"
+            }
+        }
+    },
+    "YuE2ABCScoreViewer": {
+        "display_name": "YuE2 ABC 악보 보기",
+        "description": "ABC를 로컬 SVG 오선 악보로 표시합니다. final_abc 또는 SheetSage2 abc를 연결하세요.",
+        "inputs": {
+            "abc": {
+                "name": "ABC"
+            }
+        },
+        "outputs": {}
+    },
+    "YuE2ABCScoreEditor": {
+        "display_name": "YuE2 ABC 악보 편집기",
+        "description": "오선 악보, ABC, 피아노 롤을 실시간 편집합니다. 현재 편집본을 YuE2 Generate Music으로 출력합니다.",
+        "inputs": {
+            "abc": {
+                "name": "ABC"
+            },
+            "follow_input": {
+                "name": "입력 ABC 따라가기"
+            },
+            "source_abc": {
+                "name": "입력 ABC"
+            }
+        },
+        "outputs": {
+            "0": {
+                "name": "편집 ABC"
+            }
+        }
+    },
+    "YuE2HumTranscribe": {
+        "display_name": "YuE2 허밍 채보",
+        "description": "SheetSage2로 오디오를 채보합니다. 알려진 내보내기 오류 시 끝에 무음을 추가해 한 번 재시도할 수 있습니다.",
+        "inputs": {
+            "audio_encoder": {
+                "name": "오디오 인코더"
+            },
+            "audio": {
+                "name": "오디오"
+            },
+            "mode": {
+                "name": "모드"
+            },
+            "retry_tail_padding": {
+                "name": "끝 무음 추가 후 재시도",
+                "tooltip": "알려진 SheetSage2 내보내기 격자 오류 시 끝에 0.5초 무음을 추가해 한 번 재시도합니다. 채보 결과에 음표·마디가 추가될 수 있으니 보고서를 확인하세요."
+            }
+        },
+        "outputs": {
+            "0": {
+                "name": "ABC"
+            },
+            "1": {
+                "name": "채보 보고서"
+            }
+        }
+    },
+    "YuE2HumGenerateABC": {
+        "display_name": "YuE2 필수 구조 ABC 생성",
+        "description": "사용 중인 멜로디 구간을 포함한 ABC를 생성하고 배치를 검증합니다.",
+        "inputs": {
+            "clip": {
+                "name": "CLIP"
+            },
+            "style": {
+                "name": "스타일"
+            },
+            "lyrics": {
+                "name": "가사"
+            },
+            "seed": {
+                "name": "시드"
+            },
+            "mode": {
+                "name": "모드"
+            },
+            "max_abc_tokens": {
+                "name": "최대 ABC 토큰 수"
+            },
+            "temperature": {
+                "name": "온도"
+            },
+            "top_p": {
+                "name": "Top p"
+            },
+            "top_k": {
+                "name": "Top k"
+            },
+            "repetition_penalty": {
+                "name": "반복 페널티"
+            },
+            "penalty_window": {
+                "name": "페널티 적용 범위"
+            },
+            "max_attempts": {
+                "name": "최대 시도 횟수",
+                "tooltip": "호환되지 않는 구성을 연속 시드로 재시도합니다. 사용 중인 오디오 구간을 조용히 누락하지 않습니다."
+            },
+            "anchors": {
+                "name": "멜로디 앵커 모음"
+            },
+            "main_theme": {
+                "name": "메인 테마"
+            }
+        },
+        "outputs": {
+            "0": {
+                "name": "ABC"
+            },
+            "1": {
+                "name": "생성 보고서"
+            }
+        }
+    }
+}

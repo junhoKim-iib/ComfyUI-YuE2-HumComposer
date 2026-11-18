@@ -1,6 +1,7 @@
 """Place a complete main motif without depending on verse/chorus naming."""
 from dataclasses import dataclass
 
+from ..i18n import translate
 from ..abc.parser import parse_abc
 from ..abc.validation import require_valid
 from .anchors import MelodyAnchor
@@ -15,7 +16,7 @@ class MainThemePlan:
 
 def plan_main_theme(base_abc: str, theme_abc: str, source_voice: str = 'auto',
                     reserved: tuple[MelodyAnchor, ...] = (), target_voice: str = 'auto',
-                    variation_amount: float = .25, seed: int = 0) -> MainThemePlan:
+                    variation_amount: float = .25, seed: int = 0, locale: str = 'en') -> MainThemePlan:
     if not isinstance(reserved, tuple) or not all(isinstance(anchor, MelodyAnchor) for anchor in reserved):
         raise TypeError('Expected an anchor collection')
     base = parse_abc(base_abc)
@@ -95,11 +96,12 @@ def plan_main_theme(base_abc: str, theme_abc: str, source_voice: str = 'auto',
     if not placements:
         raise ValueError(f'Main theme has {size} bars but no complete matching, untied window is available '
                          f'in {target.id}. Use a shorter theme, a longer compatible score, or adjust explicit anchors.')
-    report = ['MAIN THEME', f'Complete motif: {size} bars; voice: {target.id}; no section names required.',
-              'First statement preserves the motif; later compatible statements use limited variation.',
-              'Only listed measure ranges are replaced; section names and the remaining generated score are retained.']
-    report.extend(f'{anchor.mode}: {anchor.section}#{anchor.occurrence}, {anchor.target_voice} '
-                  f'bars {anchor.start_measure+1}-{anchor.end_measure}' for anchor in placements)
+    report = [translate('theme.heading', locale),
+              translate('theme.motif', locale, size=size, voice=target.id),
+              translate('theme.statements', locale), translate('theme.preserved', locale)]
+    report.extend(translate('theme.placement', locale, mode=anchor.mode, section=anchor.section,
+                           occurrence=anchor.occurrence, voice=anchor.target_voice,
+                           start=anchor.start_measure+1, end=anchor.end_measure) for anchor in placements)
     if skipped:
-        report.append('No safe complete window in: ' + ', '.join(skipped))
+        report.append(translate('theme.skipped', locale, sections=', '.join(skipped)))
     return MainThemePlan(tuple(placements), '\n'.join(report))

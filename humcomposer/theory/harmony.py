@@ -4,6 +4,7 @@ from fractions import Fraction
 import re
 
 from ..abc.model import Note, Meter
+from ..i18n import translate
 from .pitch import pitch_class, degree_name, normalize_mode, SCALES
 from .key_detection import metric_weight, MelodyAnalysis
 
@@ -85,7 +86,8 @@ def score_chord_fit(notes: tuple[Note, ...], chord: Chord, onset: Fraction,
 
 
 def build_progressions(analysis: MelodyAnalysis, tonic: str, mode: str = 'major',
-                       bars: int = 4, complexity: str = 'triads', count: int = 3) -> tuple[Progression, ...]:
+                       bars: int = 4, complexity: str = 'triads', count: int = 3,
+                       locale: str = 'en') -> tuple[Progression, ...]:
     mode = normalize_mode(mode)
     pitch_class(tonic)
     if not 1 <= bars <= 256 or not 1 <= count <= 20 or complexity not in ('triads','sevenths'):
@@ -118,15 +120,13 @@ def build_progressions(analysis: MelodyAnalysis, tonic: str, mode: str = 'major'
         cadence = .1 if len(roman)>1 and roman[-2].rstrip('7')=='V' and roman[-1].rstrip('7') in ('I','i') else 0
         repetition = sum(a==b for a,b in zip(roman,roman[1:]))/max(1,bars-1)
         score = max(0,min(1,sum(fits)/len(fits)*.85 + cadence + .05*(1-motion/6)-.05*repetition))
-        explanation = (f'Melody fit {sum(fits)/len(fits):.3f}; cadence bonus {cadence:.2f}; '
-                       f'root-motion proxy {motion:.2f} semitones. '
-                       f'{min(len(measures),bars)}/{bars} bars have melody evidence. '
-                       'One chord per bar; non-chord tones may be intentional.')
+        explanation = translate('harmony.explanation', locale, fit=sum(fits)/len(fits), cadence=cadence,
+                                motion=motion, evidence=min(len(measures),bars), bars=bars)
         results.append(Progression(roman,chords,round(score,4),explanation))
     return tuple(sorted(results,key=lambda p:(-p.compatibility,p.roman))[:count])
 
 
-def harmony_report(items: tuple[Progression, ...]) -> str:
-    return 'Compatibility is heuristic, not probability.\n'+'\n'.join(
+def harmony_report(items: tuple[Progression, ...], locale: str = 'en') -> str:
+    return translate('harmony.heading', locale)+'\n'+'\n'.join(
         f'{i}. {" - ".join(p.roman)}\n   {" - ".join(c.name for c in p.chords)}\n'
         f'   {p.compatibility:.3f}: {p.explanation}' for i,p in enumerate(items,1))

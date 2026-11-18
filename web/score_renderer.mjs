@@ -1,3 +1,4 @@
+import { msg, setContent, setTranslatedAttribute, translateTree, onLocaleChange, scoreMessages, t } from './i18n.mjs?v=20261119-i18n2';
 // Hand-drawn SVG notation for the existing HumComposer parser's dialect.
 const NS = "http://www.w3.org/2000/svg";
 const LEFT = 112;
@@ -8,7 +9,7 @@ const equal = (a, b) => a[0] === b[0] && a[1] === b[1];
 function svg(parent, tag, attrs = {}, text) {
     const element = document.createElementNS(NS, tag);
     for (const [key, val] of Object.entries(attrs)) element.setAttribute(key, val);
-    if (text !== undefined) element.textContent = text;
+    if (text !== undefined) setContent(element, text);
     parent?.append(element);
     return element;
 }
@@ -236,7 +237,7 @@ export function renderScore(payload, { voiceId = "all", page = 0, barsPerLine = 
     svg(root, "title", {}, payload.title);
     const background = svg(root, "rect", { width: "100%", height: "100%", fill: "white" });
     text(root, 24, 34, payload.title, 21, { "font-weight": 600 });
-    text(root, 24, 56, `${start + 1}–${end} / ${total} 마디`, 12, { fill: "#546579" });
+    text(root, 24, 56, msg('viewer.range', { start: start + 1, end, total }), 12, { fill: "#546579" });
     if (payload.tempo) text(root, width - 24, 56, payload.tempo, 12, { "text-anchor": "end" });
     let rowY = 80;
     for (const row of rows) {
@@ -367,46 +368,46 @@ export function createScoreView({ onSelect, onSeek, seekGrid = () => 16 } = {}) 
     shadow.append(stylesheet);
     function html(tag, parent, content, className) {
         const item = document.createElement(tag);
-        if (content !== undefined) item.textContent = content;
+        if (content !== undefined) setContent(item, content);
         if (className) item.className = className;
         parent.append(item);
         return item;
     }
     const viewer = html("div", shadow, undefined, "viewer");
     const toolbar = html("div", viewer, undefined, "toolbar");
-    html("strong", toolbar, "오선 악보");
+    html("strong", toolbar, msg('viewer.staff'));
     const batches = html("select", toolbar);
-    batches.setAttribute("aria-label", "실행 결과");
+    setTranslatedAttribute(batches, "aria-label", msg('viewer.results'));
     batches.hidden = true;
     const voices = html("select", toolbar);
-    voices.setAttribute("aria-label", "성부 선택");
+    setTranslatedAttribute(voices, "aria-label", msg('viewer.voice'));
     const measures = html("select", toolbar);
-    measures.setAttribute("aria-label", "한 줄 마디 수");
+    setTranslatedAttribute(measures, "aria-label", msg('viewer.barsPerLine'));
     for (const count of [2, 4, 8]) {
-        const option = html("option", measures, `${count}마디 / 줄`);
+        const option = html("option", measures, msg('viewer.barCount', { count }));
         option.value = count;
     }
     measures.value = "4";
     const minus = html("button", toolbar, "−");
-    minus.setAttribute("aria-label", "축소");
+    setTranslatedAttribute(minus, "aria-label", msg('viewer.zoomOut'));
     const zoomText = html("span", toolbar, "100%");
     const plus = html("button", toolbar, "+");
-    plus.setAttribute("aria-label", "확대");
-    const saveSvg = html("button", toolbar, "SVG 저장");
-    saveSvg.title = "현재 페이지를 SVG로 저장";
-    const saveAbc = html("button", toolbar, "ABC 저장");
-    const status = html("div", viewer, "ABC를 연결하고 실행하면 악보가 표시됩니다.", "status");
+    setTranslatedAttribute(plus, "aria-label", msg('viewer.zoomIn'));
+    const saveSvg = html("button", toolbar, msg('viewer.saveSvg'));
+    setTranslatedAttribute(saveSvg, 'title', msg('viewer.saveSvgHint'));
+    const saveAbc = html("button", toolbar, msg('viewer.saveAbc'));
+    const status = html("div", viewer, msg('viewer.empty'), "status");
     status.setAttribute("role", "status");
     const details = html("details", viewer);
-    html("summary", details, "표시 안내 / 검증 메시지");
+    html("summary", details, msg('viewer.messages'));
     const messages = html("pre", details);
     details.hidden = true;
     const viewport = html("div", viewer, undefined, "viewport");
     const paper = html("div", viewport, undefined, "paper");
     const pager = html("div", viewer, undefined, "pager");
-    const previous = html("button", pager, "이전");
+    const previous = html("button", pager, msg('common.previous'));
     const pageText = html("span", pager, "0 / 0");
-    const next = html("button", pager, "다음");
+    const next = html("button", pager, msg('common.next'));
     let payloads = [];
     let payload;
     let page = 0;
@@ -497,12 +498,12 @@ export function createScoreView({ onSelect, onSeek, seekGrid = () => 16 } = {}) 
         voices.disabled = measures.disabled = minus.disabled = plus.disabled = !valid;
         saveAbc.disabled = !payload?.source;
         previous.disabled = next.disabled = saveSvg.disabled = true;
-        pageText.textContent = "0 / 0";
-        messages.textContent = payload?.messages?.join("\n") ?? "";
+        setContent(pageText, "0 / 0");
+        messages.textContent = scoreMessages(payload).join('\n');
         details.hidden = !messages.textContent;
         status.classList.toggle("error", Boolean(payload?.error));
-        status.textContent = payload?.error ? `악보를 표시할 수 없습니다: ${payload.error}` :
-            valid ? "구간·코드·성부를 표시합니다. SVG 저장은 현재 페이지에 적용됩니다." : "ABC를 연결하고 실행하면 악보가 표시됩니다.";
+        setContent(status, payload?.error ? msg('viewer.unavailable', { error: payload.error }) :
+            valid ? msg('viewer.ready') : msg('viewer.empty'));
         if (!valid) return;
         const selected = payload.voices.filter((v) => voices.value === "all" || v.id === voices.value);
         const total = Math.max(...selected.map((v) => v.measures.length));
@@ -515,13 +516,13 @@ export function createScoreView({ onSelect, onSeek, seekGrid = () => 16 } = {}) 
             showPlayhead();
             paper.style.width = `${zoom * 100}%`;
             zoomText.textContent = `${Math.round(zoom * 100)}%`;
-            pageText.textContent = `${page + 1} / ${pages} · ${page * PAGE_BARS + 1}–${Math.min(total, (page + 1) * PAGE_BARS)} / ${total} 마디`;
+            setContent(pageText, msg('viewer.page', { page: page + 1, pages, start: page * PAGE_BARS + 1, end: Math.min(total, (page + 1) * PAGE_BARS), total }));
             previous.disabled = page === 0;
             next.disabled = page + 1 >= pages;
             saveSvg.disabled = false;
         } catch (error) {
             status.classList.add("error");
-            status.textContent = `악보 표시 오류: ${error.message}`;
+            setContent(status, msg('viewer.error', { error: error.message }));
         }
     }
 
@@ -530,7 +531,7 @@ export function createScoreView({ onSelect, onSeek, seekGrid = () => 16 } = {}) 
         page = 0;
         voices.replaceChildren();
         if (payload?.voices) {
-            if (payload.aligned) html("option", voices, "모든 성부").value = "all";
+            if (payload.aligned) html("option", voices, msg('viewer.allVoices')).value = "all";
             for (const voice of payload.voices) html("option", voices, voice.name).value = voice.id;
         }
         draw();
@@ -562,12 +563,15 @@ export function createScoreView({ onSelect, onSeek, seekGrid = () => 16 } = {}) 
     // Consume score interactions so canvas dragging/shortcuts do not steal them.
     for (const type of ["pointerdown", "keydown", "wheel"]) element.addEventListener(type, (event) => event.stopPropagation());
     draw();
+    const unsubscribeLocale = onLocaleChange(() => { translateTree(shadow); draw(); });
     return {
         element,
-        update(results) {
+        update(results, { preserveState = false } = {}) {
+            if (preserveState && payloads.length === results.length && payloads.every((item, index) =>
+                item?.source === results[index]?.source && item?.error === results[index]?.error)) return;
             payloads = results;
             batches.replaceChildren();
-            results.forEach((result, index) => { html("option", batches, `결과 ${index + 1}`).value = index; });
+            results.forEach((result, index) => { html("option", batches, msg('viewer.result', { index: index + 1 })).value = index; });
             batches.hidden = results.length < 2;
             selectResult();
         },
@@ -585,6 +589,7 @@ export function createScoreView({ onSelect, onSeek, seekGrid = () => 16 } = {}) 
             showPlayhead(follow);
         },
         destroy() {
+            unsubscribeLocale();
             for (const url of urls) URL.revokeObjectURL(url);
             urls.clear();
             element.remove();

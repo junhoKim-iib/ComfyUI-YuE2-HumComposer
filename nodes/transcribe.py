@@ -1,4 +1,5 @@
 """Delegate transcription to the loaded encoder, with one explicit padding retry."""
+from ..humcomposer.i18n import report_inputs, report_locale, translate
 from .analyze import CATEGORY
 
 
@@ -11,15 +12,16 @@ class HumTranscribe:
 
     @classmethod
     def INPUT_TYPES(cls):
-        return {'required': {
+        return report_inputs({'required': {
             'audio_encoder': ('AUDIO_ENCODER',),
             'audio': ('AUDIO',),
             'mode': (['melody', 'full'],),
             'retry_tail_padding': ('BOOLEAN', {'default': True,
                 'tooltip': 'Retry a known SheetSage2 export-grid error once with 0.5 s trailing silence. The recovered transcription may contain extra notes/bars; inspect the report.'}),
-        }}
+        }})
 
-    def transcribe(self, audio_encoder, audio, mode='melody', retry_tail_padding=True):
+    def transcribe(self, audio_encoder, audio, mode='melody', retry_tail_padding=True, extra_pnginfo=None, unique_id=None, report_language=None):
+        locale = report_locale(extra_pnginfo, unique_id, report_language)
         if mode not in ('melody', 'full'):
             raise ValueError('Transcription mode must be melody or full')
         if not isinstance(retry_tail_padding, bool):
@@ -31,7 +33,7 @@ class HumTranscribe:
         if (isinstance(rate, bool) or not isinstance(rate, int) or rate <= 0
                 or len(waveform.shape) != 3 or not all(dimension > 0 for dimension in waveform.shape)):
             raise ValueError('Expected nonempty [batch, channels, samples] audio with a positive sample rate')
-        report = 'TRANSCRIPTION: original audio; no recovery applied.'
+        report = translate('transcribe.original', locale)
         try:
             scores = audio_encoder.generate_abc(waveform, rate, melody_only=mode == 'melody')
         except ValueError as error:
@@ -48,11 +50,7 @@ class HumTranscribe:
             except ValueError as retry_error:
                 raise ValueError('SheetSage2 could not export the original audio or the single padded retry. '
                                  f'The input audio was retained. Original error: {error}; retry: {retry_error}') from retry_error
-            report = ('TRANSCRIPTION WARNING: the original SheetSage2 export failed. '
-                      f'Retried once with {extra / rate:.3f} s trailing silence; the input waveform was not changed. '
-                      'No note events were rounded or discarded by HumComposer. '
-                      'The model transcribed again and may infer extra notes or bars, including in the padding. '
-                      f'Review the recovered ABC before relying on it. Original error: {error}')
+            report = translate('transcribe.recovered', locale, seconds=extra / rate, error=error)
         if (not isinstance(scores, list) or len(scores) != waveform.shape[0]
                 or not all(isinstance(score, str) and score.strip() for score in scores)):
             raise ValueError('SheetSage2 did not return one nonempty ABC string per audio item')

@@ -1,4 +1,5 @@
-import { createScoreView } from './score_renderer.mjs';
+import { msg, setContent, setTranslatedAttribute, translateTree, onLocaleChange, scoreMessages, t } from './i18n.mjs?v=20261119-i18n2';
+import { createScoreView } from './score_renderer.mjs?v=20261119-i18n2';
 
 const NS = 'http://www.w3.org/2000/svg';
 const value = (n) => n[0] / n[1];
@@ -85,7 +86,7 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
     const shadow = element.attachShadow({ mode: 'open' });
     function html(tag, parent, content, cls) {
         const el = document.createElement(tag);
-        if (content !== undefined) el.textContent = content;
+        if (content !== undefined) setContent(el, content);
         if (cls) el.className = cls;
         parent.append(el);
         return el;
@@ -96,89 +97,89 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
     }
     const root = html('div', shadow, undefined, 'editor');
     root.tabIndex = 0;
-    root.setAttribute('aria-label', '실시간 악보 편집기');
+    setTranslatedAttribute(root, 'aria-label', msg('editor.label'));
     const toolbar = html('div', root, undefined, 'toolbar');
-    html('strong', toolbar, '실시간 악보 · 피아노');
-    const maximize = html('button', toolbar, '크게 편집');
-    html('span', toolbar, '메뉴 크기');
-    const menuSize = html('select', toolbar); menuSize.setAttribute('aria-label', '메뉴 크기');
+    html('strong', toolbar, msg('editor.title'));
+    const maximize = html('button', toolbar, msg('editor.maximize'));
+    html('span', toolbar, msg('editor.menuSize'));
+    const menuSize = html('select', toolbar); setTranslatedAttribute(menuSize, 'aria-label', msg('editor.menuSize'));
     for (const size of ['auto', 100, 125, 150, 175, 200]) {
-        html('option', menuSize, size === 'auto' ? '자동' : `${size}%`).value = size;
+        html('option', menuSize, size === 'auto' ? msg('common.auto') : `${size}%`).value = size;
     }
     menuSize.addEventListener('change', () => {
         if (menuSize.value === 'auto') element.style.removeProperty('--score-ui-font-size');
         else element.style.setProperty('--score-ui-font-size', `${16 * Number(menuSize.value) / 100}px`);
     });
     const mode = html('span', toolbar, '', 'mode');
-    const load = html('button', toolbar, '입력 ABC 불러오기');
-    const undo = html('button', toolbar, '실행 취소');
-    const redo = html('button', toolbar, '다시 실행');
-    const play = html('button', toolbar, '재생');
-    const stop = html('button', toolbar, '정지');
-    const transportText = html('span', toolbar, '재생선 · 1마디 1박', 'hint');
-    transportText.setAttribute('aria-label', '재생 위치');
+    const load = html('button', toolbar, msg('editor.load'));
+    const undo = html('button', toolbar, msg('editor.undo'));
+    const redo = html('button', toolbar, msg('editor.redo'));
+    const play = html('button', toolbar, msg('editor.play'));
+    const stop = html('button', toolbar, msg('editor.stop'));
+    const transportText = html('span', toolbar, msg('editor.initialPosition'), 'hint');
+    setTranslatedAttribute(transportText, 'aria-label', msg('editor.playbackPosition'));
     const controls = html('div', root, undefined, 'toolbar');
-    const voices = html('select', controls); voices.setAttribute('aria-label', '편집 성부');
-    const addPart = html('button', controls, '성부 추가');
-    html('span', controls, '마디');
+    const voices = html('select', controls); setTranslatedAttribute(voices, 'aria-label', msg('editor.voice'));
+    const addPart = html('button', controls, msg('editor.addVoice'));
+    html('span', controls, msg('editor.measure'));
     const measure = html('input', controls); measure.type = 'number'; measure.min = '1'; measure.value = '1';
-    measure.setAttribute('aria-label', '편집 마디');
-    const append = html('button', controls, '마디 추가');
-    html('span', controls, '입력 시작');
-    const position = html('select', controls); position.setAttribute('aria-label', '입력 시작 위치');
-    const grid = html('select', controls); grid.setAttribute('aria-label', '입력 격자');
-    for (const denominator of [4, 8, 16, 32]) html('option', grid, `1/${denominator} 격자`).value = denominator;
+    setTranslatedAttribute(measure, 'aria-label', msg('editor.editMeasure'));
+    const append = html('button', controls, msg('editor.append'));
+    html('span', controls, msg('editor.start'));
+    const position = html('select', controls); setTranslatedAttribute(position, 'aria-label', msg('editor.startPosition'));
+    const grid = html('select', controls); setTranslatedAttribute(grid, 'aria-label', msg('editor.grid'));
+    for (const denominator of [4, 8, 16, 32]) html('option', grid, msg('editor.gridSize', { denominator })).value = denominator;
     grid.value = '16';
-    const duration = html('select', controls); duration.setAttribute('aria-label', '음 길이');
-    for (const [r, label] of [['1/1', '온음표'], ['1/2', '2분'], ['3/8', '점4분'], ['1/4', '4분'],
-        ['3/16', '점8분'], ['1/8', '8분'], ['1/16', '16분'], ['1/32', '32분']]) html('option', duration, label).value = r;
+    const duration = html('select', controls); setTranslatedAttribute(duration, 'aria-label', msg('editor.duration'));
+    for (const [r, label] of [['1/1', msg('duration.whole')], ['1/2', msg('duration.half')], ['3/8', msg('duration.dottedQuarter')], ['1/4', msg('duration.quarter')],
+        ['3/16', msg('duration.dottedEighth')], ['1/8', msg('duration.eighth')], ['1/16', msg('duration.sixteenth')], ['1/32', msg('duration.thirtySecond')]]) html('option', duration, label).value = r;
     duration.value = '1/8';
-    const noteDown = html('button', controls, '반음 −');
-    const noteUp = html('button', controls, '반음 +');
-    const resize = html('button', controls, '길이 적용');
-    const erase = html('button', controls, '쉼표 / 삭제');
+    const noteDown = html('button', controls, msg('editor.noteDown'));
+    const noteUp = html('button', controls, msg('editor.noteUp'));
+    const resize = html('button', controls, msg('editor.resize'));
+    const erase = html('button', controls, msg('editor.erase'));
     const partTools = html('div', root, undefined, 'toolbar');
-    const partName = html('input', partTools); partName.placeholder = '새 성부 이름'; partName.maxLength = 64;
-    partName.setAttribute('aria-label', '새 성부 이름');
-    const partClef = html('select', partTools); partClef.setAttribute('aria-label', '새 성부 음자리표');
-    html('option', partClef, '높은음자리표').value = 'treble';
-    html('option', partClef, '낮은음자리표').value = 'bass';
-    const playback = html('select', partTools); playback.setAttribute('aria-label', '재생 성부');
-    html('option', playback, '모든 성부 함께 재생').value = 'all';
-    html('option', playback, '선택한 성부만 재생').value = 'selected';
+    const partName = html('input', partTools); setTranslatedAttribute(partName, 'placeholder', msg('editor.partName')); partName.maxLength = 64;
+    setTranslatedAttribute(partName, 'aria-label', msg('editor.partName'));
+    const partClef = html('select', partTools); setTranslatedAttribute(partClef, 'aria-label', msg('editor.partClef'));
+    html('option', partClef, msg('clef.treble')).value = 'treble';
+    html('option', partClef, msg('clef.bass')).value = 'bass';
+    const playback = html('select', partTools); setTranslatedAttribute(playback, 'aria-label', msg('editor.playbackVoice'));
+    html('option', playback, msg('editor.playAll')).value = 'all';
+    html('option', playback, msg('editor.playSelected')).value = 'selected';
     const chordTools = html('div', root, undefined, 'toolbar');
-    const selectionText = html('span', chordTools, '음표 또는 피아노 롤의 위치를 선택하세요.', 'selection');
+    const selectionText = html('span', chordTools, msg('editor.selectHint'), 'selection');
     const chord = html('input', chordTools); chord.placeholder = 'C, Am7…'; chord.maxLength = 128;
-    chord.setAttribute('aria-label', '코드 기호');
-    const applyChord = html('button', chordTools, '코드 적용');
+    setTranslatedAttribute(chord, 'aria-label', msg('editor.chord'));
+    const applyChord = html('button', chordTools, msg('editor.applyChord'));
     const tabs = html('div', root, undefined, 'tabs');
-    const staffTab = html('button', tabs, '오선 악보');
-    const rollTab = html('button', tabs, '피아노 롤');
+    const staffTab = html('button', tabs, msg('viewer.staff'));
+    const rollTab = html('button', tabs, msg('editor.roll'));
     const notation = html('div', root, undefined, 'notation');
     const roll = html('div', root, undefined, 'roll'); roll.hidden = true;
     const keyboardBar = html('div', root, undefined, 'toolbar');
-    const octaveDown = html('button', keyboardBar, '옥타브 −');
-    const octaveUp = html('button', keyboardBar, '옥타브 +');
-    html('span', keyboardBar, 'PC 첫 음 (A)');
-    const firstPitch = html('select', keyboardBar); firstPitch.setAttribute('aria-label', 'PC 키보드 첫 음');
+    const octaveDown = html('button', keyboardBar, msg('editor.octaveDown'));
+    const octaveUp = html('button', keyboardBar, msg('editor.octaveUp'));
+    html('span', keyboardBar, msg('editor.firstKey'));
+    const firstPitch = html('select', keyboardBar); setTranslatedAttribute(firstPitch, 'aria-label', msg('editor.firstKeyLabel'));
     for (let midi = 0; midi <= 115; midi++) html('option', firstPitch, pitchName(midi)).value = midi;
     firstPitch.value = '60';
     const overlapLabel = html('label', keyboardBar, undefined, 'check');
     const overlap = html('input', overlapLabel); overlap.type = 'checkbox'; overlap.checked = true;
-    overlapLabel.append(document.createTextNode('화음 겹치기'));
+    html('span', overlapLabel, msg('editor.overlap'));
     const inputLabel = html('label', keyboardBar, undefined, 'check');
     const inputEnabled = html('input', inputLabel); inputEnabled.type = 'checkbox'; inputEnabled.checked = true;
-    inputLabel.append(document.createTextNode('건반으로 입력'));
+    html('span', inputLabel, msg('editor.keyboardInput'));
     const advanceLabel = html('label', keyboardBar, undefined, 'check');
     const advance = html('input', advanceLabel); advance.type = 'checkbox'; advance.checked = true;
-    advanceLabel.append(document.createTextNode('입력 후 이동'));
-    html('span', keyboardBar, 'A W S E D F T G Y H U J K · 여러 키를 함께 누르면 화음', 'hint');
+    html('span', advanceLabel, msg('editor.advance'));
+    html('span', keyboardBar, msg('editor.keyboardHint'), 'hint');
     const keyboard = html('div', root, undefined, 'keyboard');
     const details = html('details', root, undefined, 'abc-panel');
-    html('summary', details, 'ABC 직접 편집 · 변경 즉시 반영 / 워크플로에 저장');
+    html('summary', details, msg('editor.abcPanel'));
     const source = html('textarea', details); source.spellcheck = false;
-    source.setAttribute('aria-label', '편집 ABC');
-    const status = html('div', root, '악보를 읽는 중…', 'status'); status.setAttribute('role', 'status');
+    setTranslatedAttribute(source, 'aria-label', msg('editor.abc'));
+    const status = html('div', root, msg('editor.loading'), 'status'); status.setAttribute('role', 'status');
     let draft = initialAbc;
     source.value = draft;
     let payload;
@@ -214,16 +215,16 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
         if (!dialog) return;
         placeholder.replaceWith(element);
         dialog.close(); dialog.remove(); dialog = undefined; placeholder = undefined;
-        element.style.minHeight = '660px'; maximize.textContent = '크게 편집';
+        element.style.minHeight = '660px'; setContent(maximize, msg('editor.maximize'));
     }
     maximize.addEventListener('click', () => {
         if (dialog) { closeDialog(); return; }
         placeholder = document.createComment('score-editor'); element.before(placeholder);
         dialog = document.createElement('dialog');
-        dialog.setAttribute('aria-label', '악보 편집 확대 창');
+        setTranslatedAttribute(dialog, 'aria-label', msg('editor.dialog'));
         dialog.style.cssText = 'width:94vw;height:92vh;max-width:1400px;max-height:none;padding:0;border:1px solid #8da4bc;border-radius:9px;overflow:hidden;background:#edf1f5';
         document.body.append(dialog); dialog.append(element); element.style.minHeight = '0';
-        maximize.textContent = '편집창 닫기'; dialog.showModal();
+        setContent(maximize, msg('editor.close')); dialog.showModal();
         dialog.addEventListener('cancel', (event) => { event.preventDefault(); closeDialog(); });
     });
 
@@ -260,7 +261,7 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
         const offset = Math.max(0, Math.min(value(bar.duration), playhead - value(bar.onset)));
         const beat = offset * bar.meter[1] + 1;
         const atEnd = Math.abs(offset - value(bar.duration)) < 1e-8;
-        transportText.textContent = `재생선 · ${bar.index + 1}마디 ${atEnd ? '끝' : `${Number(beat.toFixed(2))}박`}`;
+        setContent(transportText, atEnd ? msg('editor.playheadEnd', { measure: bar.index + 1 }) : msg('editor.playheadBeat', { measure: bar.index + 1, beat: Number(beat.toFixed(2)) }));
         root.dataset.playbackState = playbackActive ? 'playing' : 'stopped';
         view.setPlayhead(playhead, { voice: voices.value, follow: follow && !notation.hidden, force });
         drawRollPlayhead();
@@ -279,17 +280,17 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
         displayPlayhead(true, true);
         const end = scoreEnd(playback.value === 'all' ? payload.voices : [currentVoice()]);
         if (resume && playhead < end - 1e-8) void playFromPlayhead();
-        else if (resume) message('악보 끝으로 이동했습니다. 다시 재생하면 처음부터 시작합니다.');
+        else if (resume) message(msg('editor.seekEnd'));
     }
     function seekFromCursor() {
         const bar = currentBar();
         if (bar) seekTo(value(bar.onset) + value(cursor));
     }
     function message(text, error = false) {
-        status.textContent = text; status.classList.toggle('error', error);
+        setContent(status, text); status.classList.toggle('error', error);
     }
     function updateMode() {
-        mode.textContent = followInput() && inputSource ? '입력 ABC 사용' : '편집본 → edited_abc';
+        setContent(mode, followInput() && inputSource ? msg('editor.followInput') : msg('editor.draftOutput'));
         load.disabled = !inputSource;
         undo.disabled = !past.length; redo.disabled = !future.length;
     }
@@ -318,8 +319,8 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
                 drawKeyboard();
             }
         }
-        const name = next?.midi !== null && next?.midi !== undefined ? pitchName(next.midi) : '쉼표 / 입력 위치';
-        selectionText.textContent = `${measure.value}마디 · ${name} · 위치 ${cursor.join('/')} (온음표 기준)`;
+        const name = next?.midi !== null && next?.midi !== undefined ? pitchName(next.midi) : msg('editor.restPosition');
+        setContent(selectionText, msg('editor.selection', { measure: measure.value, name, offset: cursor.join('/') }));
         const bar = currentBar();
         drawPosition();
         chord.value = bar?.events.find((e) => e.kind === 'chord' && value(e.offset) === value(cursor))?.text ?? '';
@@ -359,7 +360,7 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
         const errors = next.messages.filter((m) => m.startsWith('ERROR'));
         play.disabled = Boolean(errors.length);
         for (const button of [append, addPart, noteDown, noteUp, resize, erase, applyChord]) button.disabled = Boolean(errors.length);
-        message(errors.length ? errors.join(' · ') : '편집본 반영됨 · 워크플로 저장 시 함께 보관 · 건반 / 롤 클릭 입력 · 드래그 이동 · 오른쪽 클릭 삭제', Boolean(errors.length));
+        message(errors.length ? errors.join(' · ') : msg('editor.applied'), Boolean(errors.length));
         updateMode();
     }
 
@@ -368,7 +369,7 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
         payload = undefined; selected = undefined;
         play.disabled = true;
         controller?.abort(); controller = new AbortController();
-        message('악보 갱신 중…');
+        message(msg('editor.refreshing'));
         try {
             const next = await request({ action: 'preview', abc: draft }, controller.signal);
             if (!destroyed && ticket === revision) accept(next);
@@ -392,7 +393,7 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
             if (!action || !payload) return;
             const ticket = ++revision;
             controller?.abort(); controller = new AbortController();
-            message('편집 반영 중…');
+            message(msg('editor.applying'));
             try {
                 const next = await request({ ...action, abc: draft }, controller.signal);
                 if (destroyed || currentEpoch !== epoch || ticket !== revision) return;
@@ -400,11 +401,11 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
             } catch (error) {
                 if (error.name !== 'AbortError' && ticket === revision && !destroyed) message(error.message, true);
             }
-        }).catch((error) => { if (!destroyed) message(`편집 오류: ${error.message}`, true); });
+        }).catch((error) => { if (!destroyed) message(msg('editor.error', { error: error.message }), true); });
     }
     function paintAction(midi, at = cursor, length = durationRatio(), target = { voice: voices.value, measure: Number(measure.value) - 1 }) {
         const bar = payload?.voices.find((v) => v.id === target.voice)?.measures[target.measure];
-        if (!bar || value(at) >= value(bar.duration)) { message('마디 끝입니다. 다음 마디를 선택하거나 마디를 추가하세요.'); return null; }
+        if (!bar || value(at) >= value(bar.duration)) { message(msg('editor.barEndHint')); return null; }
         const remaining = add(bar.duration, [-at[0], at[1]]);
         return { action: overlap.checked ? 'add' : 'paint', voice: target.voice, measure: target.measure,
             offset: at, duration: value(length) <= value(remaining) ? length : remaining, midi };
@@ -458,8 +459,8 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
             const beat = ratio(point[0] * bar.meter[1], point[1]);
             const whole = Math.floor(value(beat));
             const remainder = ratio(beat[0] - whole * beat[1], beat[1]);
-            const label = value(point) === value(bar.duration) ? '마디 끝' :
-                `${whole + 1}박${remainder[0] ? ` + ${remainder.join('/')}` : ''}`;
+            const label = value(point) === value(bar.duration) ? msg('editor.barEnd') :
+                msg('editor.beat', { beat: whole + 1, fraction: remainder[0] ? ` + ${remainder.join('/')}` : '' });
             html('option', position, label).value = point.join('/');
         }
         position.value = cursor.join('/');
@@ -467,8 +468,11 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
 
     function makeSvg(parent, tag, attrs, content) {
         const el = document.createElementNS(NS, tag);
-        for (const [key, val] of Object.entries(attrs)) el.setAttribute(key, val);
-        if (content !== undefined) el.textContent = content;
+        for (const [key, val] of Object.entries(attrs)) {
+            if (val && typeof val === 'object' && val.key) setTranslatedAttribute(el, key, val);
+            else el.setAttribute(key, val);
+        }
+        if (content !== undefined) setContent(el, content);
         parent.append(el); return el;
     }
     function drawRoll() {
@@ -479,13 +483,13 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
         if (!bar) return;
         const unit = Number(grid.value);
         const columns = Math.ceil(value(bar.duration) * unit);
-        if (columns > 256) { html('p', roll, '이 마디는 격자가 너무 큽니다. 더 큰 입력 격자를 선택하세요.'); return; }
+        if (columns > 256) { html('p', roll, msg('editor.largeGrid')); return; }
         const width = 64 + columns * 32;
         const rows = keyboardPitches.length;
         if (!rows) return;
         const firstMidi = keyboardPitches[0];
         const height = 24 + rows * 14;
-        const rootSvg = makeSvg(roll, 'svg', { width, height, viewBox: `0 0 ${width} ${height}`, role: 'group', 'aria-label': '피아노 롤 입력 격자' });
+        const rootSvg = makeSvg(roll, 'svg', { width, height, viewBox: `0 0 ${width} ${height}`, role: 'group', 'aria-label': msg('editor.rollGrid') });
         for (let row = 0; row < rows; row++) {
             const midi = firstMidi + rows - 1 - row;
             const black = [1, 3, 6, 8, 10].includes(midi % 12);
@@ -505,7 +509,7 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
                 fill: active ? '#184e9c' : '#3b82c4', 'data-roll-note': '',
                 'data-offset': tone.offset.join('/'), 'data-duration': tone.duration.join('/'), 'data-midi': tone.midi,
                 role: 'button', tabindex: 0, 'aria-label': `${pitchName(tone.midi)} · ${tone.offset.join('/')} · ${tone.duration.join('/')}` });
-            makeSvg(rect, 'title', {}, `${pitchName(tone.midi)} · 드래그 이동 / 오른쪽 가장자리로 길이 조절`);
+            makeSvg(rect, 'title', {}, msg('editor.dragHint', { pitch: pitchName(tone.midi) }));
         }
         makeSvg(rootSvg, 'line', { x1: 64, x2: 64, y1: 0, y2: height, stroke: '#e06e25',
             'stroke-width': 1.5, 'pointer-events': 'none', 'data-roll-playhead': '' });
@@ -583,12 +587,13 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
             const black = isBlack(midi);
             const key = html('button', keys, undefined, black ? 'black-key' : 'white-key');
             key.style.left = `${100 * (black ? whites - .31 : whites) / whiteCount}%`;
-            key.setAttribute('aria-label', `피아노 ${pitchName(midi)}`);
+            setTranslatedAttribute(key, 'aria-label', msg('editor.pianoKey', { pitch: pitchName(midi) }));
             const computerKey = computerKeys[midi - Number(firstPitch.value)];
             if (computerKey) html('span', key, computerKey.toUpperCase(), 'computer-key');
             if (!black) html('span', key, pitchName(midi));
             key.toggleAttribute('data-first-key', midi === Number(firstPitch.value));
-            key.title = `${pitchName(midi)}${computerKey ? ` · ${computerKey.toUpperCase()} 키` : ''}`;
+            if (computerKey) setTranslatedAttribute(key, 'title', msg('editor.computerKey', { pitch: pitchName(midi), key: computerKey.toUpperCase() }));
+            else key.title = pitchName(midi);
             key.addEventListener('click', () => enterPitch(midi));
             if (!black) whites++;
         }
@@ -622,7 +627,7 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
                 oscillator.connect(envelope).connect(audio.destination); oscillator.start(at); oscillator.stop(at + Math.max(.08, length) + .02);
                 oscillators.add(oscillator); oscillator.onended = () => { oscillators.delete(oscillator); oscillator.disconnect(); envelope.disconnect(); };
             }
-        } catch (error) { if (!destroyed && version === audioVersion) message(`소리 미리듣기 오류: ${error.message}`, true); }
+        } catch (error) { if (!destroyed && version === audioVersion) message(msg('editor.previewError', { error: error.message }), true); }
     }
     async function playFromPlayhead() {
         if (!payload || playbackActive) return;
@@ -639,7 +644,7 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
             audio ??= new AudioContext();
             if (audio.state === 'suspended') await audio.resume();
             if (destroyed || version !== audioVersion) return;
-            if (audio.state !== 'running') throw new Error('오디오를 시작할 수 없습니다. 재생 버튼으로 다시 시도하세요.');
+            if (audio.state !== 'running') throw new Error(t('editor.audioUnavailable'));
             const startAt = audio.currentTime + .03;
             playbackSession = { clock, origin: clock.secondsAt(playhead), startAt, end };
             const animate = () => {
@@ -660,15 +665,15 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
                 }
                 if (elapsed >= timeline.duration + .1) {
                     playhead = end; stopAudio(false); displayPlayhead(true, true);
-                    message('악보 끝까지 재생했습니다. 다시 재생하면 처음부터 시작합니다.'); return;
+                    message(msg('editor.playEnd')); return;
                 }
                 playbackTimer = setTimeout(schedule, 40);
             };
-            message(`재생선부터 악보 끝까지 ${playback.value === 'all' ? '모든 성부' : '선택 성부'}를 재생합니다. 악보를 클릭하면 재생 위치가 이동합니다.`);
+            message(msg(playback.value === 'all' ? 'editor.playingAll' : 'editor.playingSelected'));
             animate(); schedule();
         } catch (error) {
             if (destroyed || version !== audioVersion) return;
-            stopAudio(); message(`악보 재생 오류: ${error.message}`, true);
+            stopAudio(); message(msg('editor.playbackError', { error: error.message }), true);
         }
     }
 
@@ -733,7 +738,7 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
     firstPitch.addEventListener('change', () => changeFirstPitch(Number(firstPitch.value)));
     for (const [button, delta] of [[octaveDown, -12], [octaveUp, 12]]) button.addEventListener('click', () => changeFirstPitch(Number(firstPitch.value) + delta));
     play.addEventListener('click', playFromPlayhead); stop.addEventListener('click', () => {
-        stopAudio(); displayPlayhead(true, true); message('재생을 정지했습니다. 재생하면 현재 재생선에서 이어집니다.');
+        stopAudio(); displayPlayhead(true, true); message(msg('editor.stopped'));
     });
     root.addEventListener('keydown', (event) => {
         if (['TEXTAREA', 'INPUT', 'SELECT'].includes(event.target.tagName)) return;
@@ -762,7 +767,7 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
         if (!entry) return;
         chain = chain.then(() => {
             if (!destroyed && entry.epoch === epoch && entry.action && entry.success) advanceCursor(entry.action);
-        }).catch((error) => { if (!destroyed) message(`편집 오류: ${error.message}`, true); });
+        }).catch((error) => { if (!destroyed) message(msg('editor.error', { error: error.message }), true); });
     }
     root.addEventListener('keyup', (event) => {
         const code = event.code?.startsWith('Key') ? event.code.slice(3).toLowerCase() : event.key.toLowerCase();
@@ -777,8 +782,20 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
     });
     keyboardResize.observe(keyboard);
     drawKeyboard(); updateMode();
+    const unsubscribeLocale = onLocaleChange(() => {
+        translateTree(shadow);
+        if (dialog) translateTree(dialog);
+    });
     return {
         element,
+        attach(parent) { parent.append(dialog ? placeholder : element); },
+        getDraft() { return draft; },
+        rebind(callbacks) {
+            onChange = callbacks.onChange;
+            followInput = callbacks.followInput;
+            setFollowInput = callbacks.setFollowInput;
+            updateMode();
+        },
         loadDraft(text) { cancelPending(); playhead = 0; selected = undefined; cursor = [0, 1]; measure.value = 1;
             commit(text, false); past.length = future.length = 0; updateMode(); refresh(); },
         update(results) {
@@ -788,10 +805,10 @@ export function createScoreEditor({ initialAbc, request, onChange, followInput, 
             if (followInput() && result.followInput && inputSource && draft !== inputSource) {
                 cancelPending(); playhead = 0; selected = undefined; cursor = [0, 1]; measure.value = 1; commit(inputSource); accept(result);
             }
-            if (changedInput && !followInput()) message('새 입력 ABC가 도착했습니다. 편집본은 유지했으며, 입력 ABC 불러오기로 전환할 수 있습니다.');
+            if (changedInput && !followInput()) message(msg('editor.newInput'));
             updateMode();
         },
-        destroy() { destroyed = true; keyboardResize.disconnect(); closeDialog(); cancelPending(); window.removeEventListener('blur', releaseKeyboard);
+        destroy() { unsubscribeLocale(); destroyed = true; keyboardResize.disconnect(); closeDialog(); cancelPending(); window.removeEventListener('blur', releaseKeyboard);
             stopAudio(); audio?.close(); view.destroy(); element.remove(); },
     };
 }

@@ -1,3 +1,4 @@
+from ..humcomposer.i18n import report_inputs, report_locale
 from ..humcomposer.theory.harmony import build_progressions, harmony_report
 from ..humcomposer.theory.key_detection import rank_keys
 from ..humcomposer.theory.pitch import SCALES
@@ -12,7 +13,7 @@ class ChordProgressionRecommend:
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return {'required': {
+        return report_inputs({'required': {
             'analysis': ('YUE2_HUM_ANALYSIS',),
             'selected_key': ('STRING',{'default':'auto'}),
             'selected_mode': (['auto',*SCALES],),
@@ -20,11 +21,12 @@ class ChordProgressionRecommend:
             'complexity': (['triads','sevenths'],),
             'candidate_count': ('INT',{'default':3,'min':1,'max':20}),
             'candidate_index': ('INT',{'default':1,'min':1,'max':84}),
-        },'optional': {'candidates': ('YUE2_KEY_CANDIDATES',)}}
+        },'optional': {'candidates': ('YUE2_KEY_CANDIDATES',)}})
 
     def recommend(self, analysis, selected_key: str = 'auto', selected_mode: str = 'auto',
                   bars: int = 4, complexity: str = 'triads', candidate_count: int = 3,
-                  candidate_index: int = 1, candidates=None) -> tuple:
+                  candidate_index: int = 1, candidates=None, extra_pnginfo=None, unique_id=None, report_language=None) -> tuple:
+        locale = report_locale(extra_pnginfo, unique_id, report_language)
         if analysis is None:
             return (),''
         if selected_key.strip()=='auto' or selected_mode=='auto':
@@ -36,5 +38,5 @@ class ChordProgressionRecommend:
                 selected_key = choice.tonic
             if selected_mode=='auto':
                 selected_mode = choice.mode
-        results = build_progressions(analysis,selected_key,selected_mode,bars,complexity,candidate_count)
-        return results,f'{selected_key} {selected_mode}\n'+harmony_report(results)
+        results = build_progressions(analysis,selected_key,selected_mode,bars,complexity,candidate_count,locale)
+        return results,f'{selected_key} {selected_mode}\n'+harmony_report(results,locale)

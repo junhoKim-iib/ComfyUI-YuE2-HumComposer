@@ -7,6 +7,7 @@ import sys
 from .humcomposer.abc.editing import paint_interval, edit_chord, append_measure, add_voice
 from .nodes.score import _preview
 from .nodes.optional_audio import prepare_optional_audio
+from .humcomposer.i18n import normalize_locale, prepare_report_language
 
 
 def _time(data, key):
@@ -39,7 +40,7 @@ def handle_score_request(data: dict) -> dict:
         abc, added_voice = add_voice(abc, data.get('voice'), data.get('name', ''), data.get('clef', 'treble'))
     elif action != 'preview':
         raise ValueError('Unknown score action')
-    payload = _preview(abc)
+    payload = _preview(abc, normalize_locale(data.get('locale')))
     if added_voice:
         payload['addedVoice'] = added_voice
     return payload
@@ -68,6 +69,7 @@ def register_routes() -> None:
     server.PromptServer.instance.add_on_prompt_handler(prepare_optional_audio)
     from .nodes.generate import prepare_required_generation
     server.PromptServer.instance.add_on_prompt_handler(prepare_required_generation)
+    server.PromptServer.instance.add_on_prompt_handler(prepare_report_language)
     from aiohttp import web
 
     @server.PromptServer.instance.routes.post('/humcomposer/score')

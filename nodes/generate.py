@@ -1,6 +1,7 @@
 """Generate and check a base plan against the enabled melody inputs."""
 import re
 
+from ..humcomposer.i18n import report_inputs, report_locale, translate
 from ..humcomposer.abc.parser import parse_abc
 from ..humcomposer.abc.validation import require_valid
 from ..humcomposer.composition.anchors import MelodyAnchor
@@ -78,7 +79,7 @@ class HumGenerateABC:
 
     @classmethod
     def INPUT_TYPES(cls):
-        return {'required': {
+        return report_inputs({'required': {
             'clip': ('CLIP',),
             'style': ('STRING', {'multiline': True}),
             'lyrics': ('STRING', {'multiline': True}),
@@ -92,11 +93,12 @@ class HumGenerateABC:
             'penalty_window': ('INT', {'default': 100, 'min': 1, 'max': 20000}),
             'max_attempts': ('INT', {'default': 3, 'min': 1, 'max': 5,
                 'tooltip': 'Retry incompatible plans with consecutive seeds. Never silently drop an enabled audio section.'}),
-        }, 'optional': {'anchors': ('YUE2_ANCHORS',), 'main_theme': ('YUE2_HUM_ANALYSIS',)}}
+        }, 'optional': {'anchors': ('YUE2_ANCHORS',), 'main_theme': ('YUE2_HUM_ANALYSIS',)}})
 
     def generate(self, clip, style, lyrics, seed=0, mode='full', max_abc_tokens=8192,
                  temperature=.7, top_p=.9, top_k=30, repetition_penalty=1.005,
-                 penalty_window=100, max_attempts=3, anchors=(), main_theme=None):
+                 penalty_window=100, max_attempts=3, anchors=(), main_theme=None, extra_pnginfo=None, unique_id=None, report_language=None):
+        locale = report_locale(extra_pnginfo, unique_id, report_language)
         if isinstance(max_attempts, bool) or not isinstance(max_attempts, int) or not 1 <= max_attempts <= 5:
             raise ValueError('max_attempts must be an integer from 1 to 5')
         sections, requirements = generation_requirements(anchors, main_theme)
@@ -115,10 +117,10 @@ class HumGenerateABC:
                 abc, reserved = ensure_audio_sections(abc, anchors, main_theme)
                 validate_plan(abc, anchors, main_theme)
             except ValueError as error:
-                failures.append(f'Attempt {attempt + 1}, seed {attempt_seed}: {error}')
+                failures.append(translate('generate.attempt', locale, attempt=attempt + 1, seed=attempt_seed, error=error))
                 continue
-            report = ['BASE PLAN: required audio sections and melody placement verified.',
-                      f'Accepted attempt {attempt + 1}/{max_attempts}; seed {attempt_seed}.',
+            report = [translate('generate.verified', locale),
+                      translate('generate.accepted', locale, attempt=attempt + 1, maximum=max_attempts, seed=attempt_seed),
                       *requirements, *reserved, *failures]
             return abc, '\n'.join(report)
         raise ValueError('YuE2 could not generate a compatible plan for the enabled audio inputs after '

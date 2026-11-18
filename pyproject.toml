@@ -15,6 +15,9 @@ test = ["pytest>=8,<10"]
 [tool.setuptools.packages.find]
 include = ["humcomposer*", "nodes*"]
 
+[tool.setuptools.package-data]
+humcomposer = ["locales/*.json"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]

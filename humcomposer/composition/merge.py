@@ -2,6 +2,7 @@
 from dataclasses import dataclass, replace
 from fractions import Fraction
 
+from ..i18n import translate
 from ..abc.model import Score, Measure, Note, Rest, ChordSymbol, SourceSpan, Voice, ContextChange
 from ..abc.parser import parse_abc, parse_key
 from ..abc.serializer import rewrite_measures
@@ -165,7 +166,7 @@ def _sounding_signature(bars: tuple[Measure, ...]) -> tuple:
     return tuple(result)
 
 
-def _harmony_fit(score: Score, voice_id: str, bars: tuple[Measure, ...], tones: tuple[Tone, ...]) -> tuple[float, list[str]]:
+def _harmony_fit(score: Score, voice_id: str, bars: tuple[Measure, ...], tones: tuple[Tone, ...], locale: str = 'en') -> tuple[float, list[str]]:
     active = None
     fits = []
     warnings = []
@@ -190,7 +191,7 @@ def _harmony_fit(score: Score, voice_id: str, bars: tuple[Measure, ...], tones: 
             fit = score_chord_fit(notes,chord,onset,until-onset,bar.meter)
             fits.append(fit)
             if fit<.55:
-                warnings.append(f'{voice_id} bar {bar.index+1}: low melody/chord fit {fit:.3f} over {name}')
+                warnings.append(translate('compose.lowFit', locale, voice=voice_id, bar=bar.index+1, fit=fit, chord=name))
     return (sum(fits)/len(fits) if fits else .5),warnings
 
 
@@ -205,7 +206,7 @@ def _analysis_of_fitted_tones(base: Score, bars: tuple[Measure, ...], tones: tup
 
 
 def compose_song(base_abc: str, anchors: tuple[MelodyAnchor, ...], global_key: str = '',
-                 transpose_policy: str = 'suggest', strictness: str = 'strict') -> CompositionResult:
+                 transpose_policy: str = 'suggest', strictness: str = 'strict', locale: str = 'en') -> CompositionResult:
     if strictness not in ('strict','warnings_as_errors'):
         raise ValueError('strictness must be strict or warnings_as_errors')
     if transpose_policy not in ('none','suggest','automatic_nearest'):
@@ -218,9 +219,9 @@ def compose_song(base_abc: str, anchors: tuple[MelodyAnchor, ...], global_key: s
             and any(anchor.start_measure is None for anchor in anchors)):
         raise ValueError('Base plan needs named sections from a complete YuE2 ABC plan')
     key = parse_key(global_key) if global_key.strip() else None
-    report = ['GLOBAL KEY: '+(key.text if key else 'base local keys'), 'ANCHORS']
+    report = [translate('compose.global', locale, key=key.text if key else translate('compose.localKeys', locale)), translate('compose.anchors', locale)]
     if not anchors:
-        report.append('No active melody anchors; base plan unchanged.')
+        report.append(translate('compose.noAnchors', locale))
     warnings: list[str] = [i.message for i in validate_score(base,native=True) if i.severity=='warning']
     edits = {}
     expected: dict[tuple[str,int,int],tuple[Tone, ...]] = {}
@@ -249,7 +250,7 @@ def compose_song(base_abc: str, anchors: tuple[MelodyAnchor, ...], global_key: s
                 if not selected.start_measure <= anchor.start_measure < anchor.end_measure <= selected.end_measure:
                     raise ValueError(f'{section.id}: anchor measure range is outside its section')
                 selected = replace(selected,start_measure=anchor.start_measure,end_measure=anchor.end_measure)
-                report.append(f'  RANGE: bars {selected.start_measure+1}-{selected.end_measure}')
+                report.append(translate('compose.range', locale, start=selected.start_measure+1, end=selected.end_measure))
             bars = base.voice(anchor.target_voice).measures[selected.start_measure:selected.end_measure]
             if bars[0].notes and bars[0].notes[0].tie_from_previous or bars[-1].notes and bars[-1].notes[-1].tie_to_next:
                 raise ValueError(f'{section.id}: tie crosses target boundary; cannot replace safely')
@@ -261,33 +262,33 @@ def compose_song(base_abc: str, anchors: tuple[MelodyAnchor, ...], global_key: s
             marker_count = sum(c.voice_id==anchor.target_voice and c.kind in ('K','M')
                                and any(b.span.start<=c.span.start<b.span.end for b in bars) for c in base.changes)
             if marker_count:
-                report.append(f'  CONTEXT: {marker_count} original key/meter markers retained at exact onsets')
+                report.append(translate('compose.context', locale, count=marker_count))
             source = parse_abc(abc)
             require_valid(source)
             tones,source_bars = _tones(source,anchor.source_voice)
             source_tempos = [c.value for c in source.changes if c.kind=='Q']
             target_tempos = [c.value for c in base.changes if c.kind=='Q' and c.voice_id in (None,anchor.target_voice) and c.onset<=bars[0].onset]
             if source_tempos and target_tempos and source_tempos[0]!=target_tempos[-1]:
-                warnings.append(f'{section.id}: anchor/base tempos differ; symbolic beat rhythm retained at base tempo')
+                warnings.append(translate('compose.tempoWarning', locale, section=section.id))
             tones = _fit(tones,source_bars,bars,anchor.fit_policy)
-            report.append(f'  LENGTH: {len(source_bars)}/{len(bars)} bars; fit_policy={anchor.fit_policy}')
+            report.append(translate('compose.length', locale, source=len(source_bars), target=len(bars), policy=anchor.fit_policy))
             target_key = key or bars[0].key
             source_key = source_bars[0].key
             effective_key = source_key
             policy = anchor.transpose_policy if anchor.transpose_policy!='suggest' else transpose_policy
             delta = (target_key.pitch_class-source_key.pitch_class+6)%12-6
             if source_key.pitch_class!=target_key.pitch_class or source_key.mode!=target_key.mode:
-                message = f'{section.id}: {source_key.text} -> {target_key.text}; suggested transpose {delta:+d} semitones'
+                message = translate('compose.transpose', locale, section=section.id, source=source_key.text, target=target_key.text, delta=delta)
                 if policy=='automatic_nearest':
                     if source_key.mode!=target_key.mode or any(b.key!=source_key for b in source_bars):
                         raise ValueError('Automatic transposition requires one source key and equal source/target modes')
                     tones = tuple(replace(t,midi=t.midi+delta if t.midi is not None else None) for t in tones)
                     if any(t.midi is not None and not 0<=t.midi<=127 for t in tones):
                         raise ValueError('Transposition exceeds MIDI pitch range')
-                    report.append('  TRANSPOSE APPLIED: '+message)
+                    report.append(translate('compose.transposed', locale, message=message))
                     effective_key = target_key
                 else:
-                    warnings.append(message+'; pitch preserved ('+policy+')')
+                    warnings.append(translate('compose.pitchPreserved', locale, message=message, policy=policy))
             if anchor.mode=='VARIATION':
                 if any(b.key!=source_key for b in source_bars) or any(c.kind=='K' and c.onset>0 for c in source.changes):
                     raise ValueError('VARIATION requires a single source key; LOCK supports key-changing sources')
@@ -298,26 +299,24 @@ def compose_song(base_abc: str, anchors: tuple[MelodyAnchor, ...], global_key: s
                 meter_grid = tuple((b.onset-bars[0].onset,b.meter) for b in bars)
                 tones,metric = generate_variation(tones,effective_key.tonic,effective_key.mode,
                                                  anchor.variation_amount*anchor.strength,anchor.seed,meter_grid=meter_grid)
-                report.append(f'  Motif similarity {metric.overall:.3f}; contour {metric.contour:.3f}; '
-                              f'rhythm {metric.rhythm:.3f}; important notes {metric.important_retention:.3f}; '
-                              f'ending retained={metric.ending_retained}; seed={anchor.seed}')
-                report.append(f'  VARIATION changed {sum(a.midi!=b.midi for a,b in zip(before_variation,tones))} notes; protected-only motifs remain unchanged.')
+                report.append(translate('compose.similarity', locale, overall=metric.overall, contour=metric.contour, rhythm=metric.rhythm, important=metric.important_retention, ending=metric.ending_retained, seed=anchor.seed))
+                report.append(translate('compose.variation', locale, count=sum(a.midi!=b.midi for a,b in zip(before_variation,tones))))
                 if any(b.meter.numerator not in (2,3,4,6,9,12) for b in bars):
-                    report.append('  Irregular meter: conventional pulse grid protected; additive grouping not inferred.')
-            fit,conflicts = _harmony_fit(base,'Vocal',bars,tones)
-            report.append(f'  BASE HARMONY compatibility {fit:.3f}; policy={anchor.harmony_policy}')
+                    report.append(translate('compose.irregular', locale))
+            fit,conflicts = _harmony_fit(base,'Vocal',bars,tones,locale)
+            report.append(translate('compose.harmony', locale, fit=fit, policy=anchor.harmony_policy))
             if anchor.harmony_policy=='recommend_only':
                 warnings.extend(f'{section.id}: {w}' for w in conflicts)
                 if any(t.midi is not None for t in tones):
                     recommendation = build_progressions(_analysis_of_fitted_tones(base,bars,tones),
                                                        target_key.tonic,target_key.mode,len(bars),count=1)[0]
-                    report.append('  HARMONY SUGGESTION (not applied): '+' - '.join(c.name for c in recommendation.chords))
+                    report.append(translate('compose.suggestion', locale, chords=' - '.join(c.name for c in recommendation.chords)))
                 else:
-                    report.append('  HARMONY SUGGESTION: no retained melody notes after fitting')
+                    report.append(translate('compose.noSuggestion', locale))
             reharmony = None
             if anchor.harmony_policy=='reharmonize':
                 reharmony = build_progressions(_analysis_of_fitted_tones(base,bars,tones),target_key.tonic,target_key.mode,len(bars),count=1)[0]
-                report.append('  REHARMONIZE APPLIED: '+' - '.join(c.name for c in reharmony.chords))
+                report.append(translate('compose.reharmonized', locale, chords=' - '.join(c.name for c in reharmony.chords)))
             start = Fraction()
             for i,b in enumerate(bars):
                 chords = b.chords
@@ -358,5 +357,5 @@ def compose_song(base_abc: str, anchors: tuple[MelodyAnchor, ...], global_key: s
             raise ValueError(f'Internal invariant failure: anchor melody changed in {voice_id} bars {start+1}-{end}')
     if warnings and strictness=='warnings_as_errors':
         raise ValueError('Composition warnings treated as errors:\n'+'\n'.join(warnings))
-    report += ['WARNINGS']+ (warnings or ['none'])
-    return CompositionResult(result_text,'\n'.join(report),format_validation(validate_score(final,native=True)))
+    report += [translate('compose.warnings', locale)]+ (warnings or [translate('compose.none', locale)])
+    return CompositionResult(result_text,'\n'.join(report),format_validation(validate_score(final,native=True), locale))

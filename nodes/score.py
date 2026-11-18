@@ -1,3 +1,4 @@
+from ..humcomposer.i18n import report_inputs, report_locale, translate
 """Adapt the existing ABC model to the score widget; never rewrite the source."""
 from fractions import Fraction
 import re
@@ -70,12 +71,13 @@ def _voice_metadata(score, voice_id: str) -> tuple[str, str]:
     return name, clef
 
 
-def _preview(abc: str) -> dict:
+def _preview(abc: str, locale: str = 'en') -> dict:
     score = parse_abc(abc, polyphonic=True)
     if not any(voice.measures for voice in score.voices):
         raise ValueError('No musical events found')
     messages = [f'{issue.severity.upper()} [{issue.code}] {issue.message}'
                 for issue in validate_score(score) if issue.code != 'missing_sections']
+    message_details = [None] * len(messages)
     voices = []
     fractional_rhythm = False
     for voice in score.voices:
@@ -151,13 +153,15 @@ def _preview(abc: str) -> dict:
              for voice in score.voices if voice.measures]
     aligned = all(grid == grids[0] for grid in grids[1:])
     if not aligned:
-        messages.append('성부의 마디 경계가 달라 성부별로 표시합니다.')
+        messages.append(translate('score.unaligned', locale))
+        message_details.append({'key': 'score.unaligned'})
     if fractional_rhythm:
-        messages.append('일반 음표로 나타낼 수 없는 음가는 마름모와 온음표 기준 분수로 표시합니다.')
+        messages.append(translate('score.fractional', locale))
+        message_details.append({'key': 'score.fractional'})
     tempo = next((f'{c.value.beat} = {c.value.bpm}' for c in reversed(score.changes)
                   if c.kind == 'Q' and c.voice_id is None), '')
     return {'title': next((h.value for h in score.headers if h.field == 'T'), 'YuE2 Score'), 'tempo': tempo,
-            'source': abc, 'voices': voices, 'aligned': aligned, 'messages': messages}
+            'source': abc, 'voices': voices, 'aligned': aligned, 'messages': messages, 'messageDetails': message_details}
 
 
 class ABCScoreViewer:
@@ -170,11 +174,11 @@ class ABCScoreViewer:
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return {'required': {'abc': ('STRING', {'forceInput': True})}}
+        return report_inputs({'required': {'abc': ('STRING', {'forceInput': True})}})
 
-    def preview(self, abc: str) -> dict:
+    def preview(self, abc: str, extra_pnginfo=None, unique_id=None, report_language=None) -> dict:
         try:
-            payload = _preview(abc)
+            payload = _preview(abc, report_locale(extra_pnginfo, unique_id, report_language))
         except (ABCParseError, ValueError) as error:
             payload = {'error': str(error), 'source': abc}
         return {'ui': {'score': [payload]}, 'result': ()}

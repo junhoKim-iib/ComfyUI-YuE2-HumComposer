@@ -6,18 +6,11 @@ from ..abc.model import Score, Note, Meter
 from ..abc.parser import parse_abc
 from ..abc.validation import validate_score, require_valid
 from .pitch import SCALES, NAMES
+from ..i18n import translate
 
 WEIGHTS = {'coverage': .36, 'tonic': .19, 'dominant': .07, 'ending': .23,
            'first': .04, 'leading': .06, 'long': .05}
-MODE_DESCRIPTION = {
-    'major':'장3도와 이끈음이 있는 조성 후보. 종지·리듬·음역에 따라 인상이 달라집니다.',
-    'minor':'단3도 기반 후보. V 또는 V7의 이끈음을 강조하면 긴장과 해결을 강화할 수 있습니다.',
-    'dorian':'단3도와 장6도를 결합하는 모드입니다.',
-    'phrygian':'단3도와 낮은 2도가 특징인 모드입니다.',
-    'lydian':'장3도와 높아진 4도가 특징인 모드입니다.',
-    'mixolydian':'장3도와 낮은 7도를 사용하는 모드입니다.',
-    'locrian':'단3도와 감5도로 으뜸 삼화음의 안정성이 약한 모드입니다.',
-}
+MODE_DESCRIPTION = {mode: translate(f'mode.{mode}') for mode in SCALES}
 
 
 @dataclass(frozen=True)
@@ -89,7 +82,7 @@ def analyze_melody(abc: str, voice_id: str = 'auto') -> MelodyAnalysis:
                           tuple(n.pitch_class for n in notes if n.onset in ends), tuple(warnings))
 
 
-def rank_keys(analysis: MelodyAnalysis, include_modes: bool = False, count: int = 5) -> tuple[KeyCandidate, ...]:
+def rank_keys(analysis: MelodyAnalysis, include_modes: bool = False, count: int = 5, locale: str = 'en') -> tuple[KeyCandidate, ...]:
     if not 1 <= count <= 84:
         raise ValueError('candidate_count must be between 1 and 84')
     notes = analysis.notes
@@ -121,31 +114,42 @@ def rank_keys(analysis: MelodyAnalysis, include_modes: bool = False, count: int 
                    + WEIGHTS['leading']*min(1,leading*6) + WEIGHTS['long']*long)
             score = raw*(.35+.65*evidence)
             candidates.append(KeyCandidate(NAMES[tonic], mode, round(score,4), coverage, ending,
-                                           tonic_support, MODE_DESCRIPTION[mode]))
+                                           tonic_support, translate(f'mode.{mode}', locale)))
     return tuple(sorted(candidates, key=lambda c:(-c.compatibility,c.tonic,c.mode))[:count])
 
 
-def analysis_report(analysis: MelodyAnalysis) -> str:
+def analysis_report(analysis: MelodyAnalysis, locale: str = 'en') -> str:
     voice = analysis.score.voice(analysis.voice_id)
     pitches = [n.midi for n in analysis.notes]
     ordered = sorted(pitches)
     estimated = rank_keys(analysis)
-    text = (f'Voice: {analysis.voice_id}\nNotes (ties merged): {len(pitches)}\n'
-            f'Duration: {voice.duration} whole notes; bars: {len(voice.measures)}\n'
-            f'Declared key: {analysis.declared_key}\nRange MIDI: {min(pitches)}–{max(pitches)}\n'
-            f'Tessitura (10–90% MIDI): {ordered[len(ordered)//10]}–{ordered[min(len(ordered)-1,len(ordered)*9//10)]}\n'
-            f'Pitch classes: {sorted(set(p%12 for p in pitches))}\n'
-            f'Phrase finals: {analysis.phrase_finals}\n'
-            f'Long notes (>=quarter): {sum(n.duration>=Fraction(1,4) for n in analysis.notes)}\n'
-            f'Meters: {sorted({f"{b.meter.numerator}/{b.meter.denominator}" for b in voice.measures})}\n'
-            f'Tempo: {[str(c.value) for c in analysis.score.changes if c.kind=="Q"]}\n'
-            f'Estimated: {estimated[0].tonic} {estimated[0].mode}\n'
-            f'Top score gap: {estimated[0].compatibility-estimated[1].compatibility:.3f} (small = ambiguous)')
-    return text + ''.join('\nWARNING: '+w for w in analysis.warnings)
+    def line(message_key, **params):
+        return translate('analysis.' + message_key, locale, **params)
+    lines = [
+        line('voice', voice=analysis.voice_id),
+        line('notes', count=len(pitches)),
+        line('duration', duration=voice.duration, bars=len(voice.measures)),
+        line('key', key=analysis.declared_key),
+        line('range', low=min(pitches), high=max(pitches)),
+        line('tessitura', low=ordered[len(ordered)//10], high=ordered[min(len(ordered)-1,len(ordered)*9//10)]),
+        line('pitchClasses', values=sorted(set(p%12 for p in pitches))),
+        line('finals', values=analysis.phrase_finals),
+        line('longNotes', count=sum(n.duration>=Fraction(1,4) for n in analysis.notes)),
+        line('meters', values=sorted({f"{b.meter.numerator}/{b.meter.denominator}" for b in voice.measures})),
+        line('tempo', values=[str(c.value) for c in analysis.score.changes if c.kind=='Q']),
+        line('estimated', tonic=estimated[0].tonic, mode=estimated[0].mode),
+        line('gap', gap=estimated[0].compatibility-estimated[1].compatibility),
+    ]
+    warnings = {translate(key): key for key in ('warning.sparse', 'warning.keyChanges')}
+    for warning in analysis.warnings:
+        message = translate(warnings[warning], locale) if warning in warnings else warning
+        lines.append(line('warning', message=message))
+    return '\n'.join(lines)
 
 
-def key_report(candidates: tuple[KeyCandidate, ...]) -> str:
-    return 'Heuristic compatibility; not statistical probability.\n' + '\n'.join(
-        f'{i}. {c.tonic} {c.mode}: {c.compatibility:.3f}; scale {c.coverage:.0%}; '
-        f'ending {c.ending_support:.0%}; tonic {c.tonic_support:.0%}\n   {c.explanation}'
+def key_report(candidates: tuple[KeyCandidate, ...], locale: str = 'en') -> str:
+    return translate('keys.heading', locale) + '\n' + '\n'.join(
+        translate('keys.item', locale, index=i, tonic=c.tonic, mode=c.mode, score=c.compatibility,
+                  coverage=c.coverage, ending=c.ending_support, support=c.tonic_support,
+                  description=translate(f'mode.{c.mode}', locale))
         for i,c in enumerate(candidates,1))

@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 import re
 
+from ..i18n import translate
 from .model import Score, SourceSpan, Note, NoteStack
 
 
@@ -90,9 +91,9 @@ def validate_score(score: Score, *, native: bool = False) -> tuple[ValidationIss
     return tuple(issues)
 
 
-def format_validation(issues: tuple[ValidationIssue, ...]) -> str:
+def format_validation(issues: tuple[ValidationIssue, ...], locale: str = 'en') -> str:
     valid = not any(issue.severity == "error" for issue in issues)
-    return ("PASS" if valid else "FAIL") + "".join(
+    return translate('validation.passed' if valid else 'validation.failed', locale) + "".join(
         f"\n{issue.severity.upper()} [{issue.code}] {issue.message}" for issue in issues)
 
 

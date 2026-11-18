@@ -1,0 +1,336 @@
+{
+    "YuE2HumMelodyAnalyze": {
+        "display_name": "YuE2 Hum Melody Analyze",
+        "description": "Analyze ABC melody, rhythm, range and tonal evidence.",
+        "inputs": {
+            "abc": {
+                "name": "ABC"
+            },
+            "voice": {
+                "name": "Voice"
+            },
+            "enabled": {
+                "name": "Enabled",
+                "tooltip": "Use this melody. False skips upstream audio validation and transcription."
+            },
+            "source_report": {
+                "name": "Source report"
+            }
+        },
+        "outputs": {
+            "0": {
+                "name": "Melody analysis"
+            },
+            "1": {
+                "name": "Summary"
+            },
+            "2": {
+                "name": "Normalized ABC"
+            }
+        }
+    },
+    "YuE2KeyModeCandidates": {
+        "display_name": "YuE2 Key & Mode Candidates",
+        "description": "Rank key and mode candidates by heuristic compatibility.",
+        "inputs": {
+            "analysis": {
+                "name": "Melody analysis"
+            },
+            "include_modes": {
+                "name": "Include modes"
+            },
+            "candidate_count": {
+                "name": "Candidate count"
+            }
+        },
+        "outputs": {
+            "0": {
+                "name": "Key candidates"
+            },
+            "1": {
+                "name": "Report"
+            }
+        }
+    },
+    "YuE2ChordProgressionRecommend": {
+        "display_name": "YuE2 Chord Progression Recommend",
+        "description": "Recommend chord progressions using the melody and selected key.",
+        "inputs": {
+            "analysis": {
+                "name": "Melody analysis"
+            },
+            "selected_key": {
+                "name": "Selected key"
+            },
+            "selected_mode": {
+                "name": "Selected mode"
+            },
+            "bars": {
+                "name": "Bars"
+            },
+            "complexity": {
+                "name": "Chord complexity"
+            },
+            "candidate_count": {
+                "name": "Candidate count"
+            },
+            "candidate_index": {
+                "name": "Candidate index"
+            },
+            "candidates": {
+                "name": "Key candidates"
+            }
+        },
+        "outputs": {
+            "0": {
+                "name": "Chord recommendations"
+            },
+            "1": {
+                "name": "Report"
+            }
+        }
+    },
+    "YuE2MelodyAnchor": {
+        "display_name": "YuE2 Melody Anchor",
+        "description": "Place a melody in a section with explicit fit, transposition and harmony policies.",
+        "inputs": {
+            "abc": {
+                "name": "ABC"
+            },
+            "section": {
+                "name": "Section"
+            },
+            "occurrence": {
+                "name": "Occurrence"
+            },
+            "mode": {
+                "name": "Mode"
+            },
+            "strength": {
+                "name": "Strength"
+            },
+            "fit_policy": {
+                "name": "Length fit policy"
+            },
+            "transpose_policy": {
+                "name": "Transpose policy"
+            },
+            "harmony_policy": {
+                "name": "Harmony policy"
+            },
+            "source_voice": {
+                "name": "Source voice"
+            },
+            "target_voice": {
+                "name": "Target voice"
+            },
+            "variation_amount": {
+                "name": "Variation amount"
+            },
+            "seed": {
+                "name": "Seed"
+            },
+            "source": {
+                "name": "Fallback anchor ID",
+                "tooltip": "Fallback preceding anchor ID, e.g. chorus#1. Used only when abc is empty; supplied ABC takes priority."
+            },
+            "enabled": {
+                "name": "Enabled",
+                "tooltip": "Disabled anchors do not require ABC and leave the base plan unchanged."
+            }
+        },
+        "outputs": {
+            "0": {
+                "name": "Melody anchor"
+            }
+        }
+    },
+    "YuE2AppendMelodyAnchor": {
+        "display_name": "YuE2 Append Melody Anchor",
+        "description": "Append an enabled melody anchor to the existing collection.",
+        "inputs": {
+            "anchor": {
+                "name": "Melody anchor"
+            },
+            "previous": {
+                "name": "Previous anchors"
+            }
+        },
+        "outputs": {
+            "0": {
+                "name": "Melody anchors"
+            }
+        }
+    },
+    "YuE2HumSongComposer": {
+        "display_name": "YuE2 Hum Song Composer",
+        "description": "Merge melody anchors and the main theme into a generated ABC song.",
+        "inputs": {
+            "base_abc": {
+                "name": "Base ABC"
+            },
+            "global_key": {
+                "name": "Global key",
+                "tooltip": "Empty uses each target local key; e.g. C or A minor. Does not rewrite base key."
+            },
+            "transpose_policy": {
+                "name": "Transpose policy"
+            },
+            "strictness": {
+                "name": "Validation strictness"
+            },
+            "anchors": {
+                "name": "Melody anchors"
+            },
+            "main_theme": {
+                "name": "Main theme",
+                "tooltip": "Main melody of the song; does not require a chorus or any particular section name."
+            }
+        },
+        "outputs": {
+            "0": {
+                "name": "Final ABC"
+            },
+            "1": {
+                "name": "Composition report"
+            },
+            "2": {
+                "name": "Validation report"
+            }
+        }
+    },
+    "YuE2ABCValidate": {
+        "display_name": "YuE2 ABC Validate",
+        "description": "Validate ABC syntax and optionally native song structure.",
+        "inputs": {
+            "abc": {
+                "name": "ABC"
+            },
+            "native_song": {
+                "name": "Validate native song format"
+            }
+        },
+        "outputs": {
+            "0": {
+                "name": "Valid"
+            },
+            "1": {
+                "name": "Report"
+            }
+        }
+    },
+    "YuE2ABCScoreViewer": {
+        "display_name": "YuE2 ABC Score Viewer",
+        "description": "Display ABC as a local SVG staff score. Connect final_abc or SheetSage2 abc.",
+        "inputs": {
+            "abc": {
+                "name": "ABC"
+            }
+        },
+        "outputs": {}
+    },
+    "YuE2ABCScoreEditor": {
+        "display_name": "YuE2 ABC Score Editor",
+        "description": "Live staff, ABC and piano-roll editor. Output the current draft to YuE2 Generate Music.",
+        "inputs": {
+            "abc": {
+                "name": "ABC"
+            },
+            "follow_input": {
+                "name": "Follow input ABC"
+            },
+            "source_abc": {
+                "name": "Input ABC"
+            }
+        },
+        "outputs": {
+            "0": {
+                "name": "Edited ABC"
+            }
+        }
+    },
+    "YuE2HumTranscribe": {
+        "display_name": "YuE2 Hum Transcribe",
+        "description": "Transcribe audio with SheetSage2, optionally retrying a known export error once with trailing silence.",
+        "inputs": {
+            "audio_encoder": {
+                "name": "Audio encoder"
+            },
+            "audio": {
+                "name": "Audio"
+            },
+            "mode": {
+                "name": "Mode"
+            },
+            "retry_tail_padding": {
+                "name": "Retry with tail padding",
+                "tooltip": "Retry a known SheetSage2 export-grid error once with 0.5 s trailing silence. The recovered transcription may contain extra notes/bars; inspect the report."
+            }
+        },
+        "outputs": {
+            "0": {
+                "name": "ABC"
+            },
+            "1": {
+                "name": "Transcription report"
+            }
+        }
+    },
+    "YuE2HumGenerateABC": {
+        "display_name": "YuE2 Hum Generate Required ABC",
+        "description": "Generate ABC with the required enabled melody sections and validate placement.",
+        "inputs": {
+            "clip": {
+                "name": "CLIP"
+            },
+            "style": {
+                "name": "Style"
+            },
+            "lyrics": {
+                "name": "Lyrics"
+            },
+            "seed": {
+                "name": "Seed"
+            },
+            "mode": {
+                "name": "Mode"
+            },
+            "max_abc_tokens": {
+                "name": "Maximum ABC tokens"
+            },
+            "temperature": {
+                "name": "Temperature"
+            },
+            "top_p": {
+                "name": "Top p"
+            },
+            "top_k": {
+                "name": "Top k"
+            },
+            "repetition_penalty": {
+                "name": "Repetition penalty"
+            },
+            "penalty_window": {
+                "name": "Penalty window"
+            },
+            "max_attempts": {
+                "name": "Maximum attempts",
+                "tooltip": "Retry incompatible plans with consecutive seeds. Never silently drop an enabled audio section."
+            },
+            "anchors": {
+                "name": "Melody anchors"
+            },
+            "main_theme": {
+                "name": "Main theme"
+            }
+        },
+        "outputs": {
+            "0": {
+                "name": "ABC"
+            },
+            "1": {
+                "name": "Generation report"
+            }
+        }
+    }
+}
