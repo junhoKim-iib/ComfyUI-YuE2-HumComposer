@@ -1,4 +1,14 @@
 {
+    "YuE2HumAudioInput": {
+        "display_name": "YuE2 허밍 오디오 입력",
+        "description": "오디오 파일을 선택하거나 업로드하고 마이크로 멜로디를 녹음할 수 있습니다.",
+        "inputs": {
+            "source": { "name": "입력 소스" },
+            "audio": { "name": "오디오 파일" },
+            "file_audio": { "name": "연결 오디오 (선택)" },
+            "enabled": { "name": "멜로디 사용" }
+        }
+    },
     "YuE2HumMelodyAnalyze": {
         "display_name": "YuE2 허밍 멜로디 분석",
         "description": "ABC 멜로디의 리듬, 음역과 조성 근거를 분석합니다.",

@@ -1,4 +1,7 @@
 export const nodeTitles = [
+    { type: 'YuE2HumAudioInput', key: 'workflow.node.mainAudioInput' },
+    { type: 'YuE2HumAudioInput', key: 'workflow.node.introAudioInput' },
+    { type: 'YuE2HumAudioInput', key: 'workflow.node.bridgeAudioInput' },
     {
         "type": "PrimitiveBoolean",
         "key": "workflow.node.mainAudioEnabled"

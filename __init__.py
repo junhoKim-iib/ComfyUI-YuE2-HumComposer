@@ -7,6 +7,7 @@ from .nodes.validation import ABCValidate
 from .nodes.score import ABCScoreViewer
 from .nodes.editor import ABCScoreEditor
 from .nodes.transcribe import HumTranscribe
+from .nodes.audio_input import HumAudioInput
 from .nodes.generate import HumGenerateABC
 from .web_api import register_routes
 
@@ -24,6 +25,7 @@ NODE_CLASS_MAPPINGS = {
     'YuE2ABCScoreViewer': ABCScoreViewer,
     'YuE2ABCScoreEditor': ABCScoreEditor,
     'YuE2HumTranscribe': HumTranscribe,
+    'YuE2HumAudioInput': HumAudioInput,
     'YuE2HumGenerateABC': HumGenerateABC,
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -37,5 +39,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     'YuE2ABCScoreViewer': 'YuE2 ABC Score Viewer',
     'YuE2ABCScoreEditor': 'YuE2 ABC Score Editor',
     'YuE2HumTranscribe': 'YuE2 Hum Transcribe',
+    'YuE2HumAudioInput': 'YuE2 Hum Audio Input',
     'YuE2HumGenerateABC': 'YuE2 Hum Generate Required ABC',
 }

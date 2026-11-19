@@ -1,4 +1,14 @@
 {
+    "YuE2HumAudioInput": {
+        "display_name": "YuE2 Hum Audio Input",
+        "description": "Choose or upload an audio file, or record a melody with your microphone.",
+        "inputs": {
+            "source": { "name": "Input source" },
+            "audio": { "name": "Audio file" },
+            "file_audio": { "name": "Connected audio (optional)" },
+            "enabled": { "name": "Use melody" }
+        }
+    },
     "YuE2HumMelodyAnalyze": {
         "display_name": "YuE2 Hum Melody Analyze",
         "description": "Analyze ABC melody, rhythm, range and tonal evidence.",

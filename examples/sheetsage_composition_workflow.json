@@ -1,6 +1,6 @@
 {
-  "last_node_id": 48,
-  "last_link_id": 61,
+  "last_node_id": 51,
+  "last_link_id": 67,
   "nodes": [
     {
       "id": 45,
@@ -22,7 +22,8 @@
           "name": "BOOLEAN",
           "type": "BOOLEAN",
           "links": [
-            4
+            4,
+            62
           ]
         }
       ],
@@ -35,36 +36,48 @@
       "title": "메인 주제 오디오 사용 · BOOL"
     },
     {
-      "id": 1,
-      "type": "LoadAudio",
+      "id": 49,
+      "type": "YuE2HumAudioInput",
       "pos": [
         1100,
         290
       ],
       "size": [
         460,
-        200
+        210
       ],
       "flags": {},
       "order": 1,
       "mode": 0,
-      "inputs": [],
+      "inputs": [
+        {
+          "name": "file_audio",
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "link": 62
+        }
+      ],
       "outputs": [
         {
           "name": "AUDIO",
           "type": "AUDIO",
           "links": [
-            2
+            63
           ]
         }
       ],
       "properties": {
-        "Node name for S&R": "LoadAudio"
+        "Node name for S&R": "YuE2HumAudioInput"
       },
       "widgets_values": [
+        "file",
         ""
       ],
-      "title": "메인 주제 허밍 파일"
+      "title": "메인 주제 오디오 입력"
     },
     {
       "id": 2,
@@ -123,7 +136,7 @@
         {
           "name": "audio",
           "type": "AUDIO",
-          "link": 2
+          "link": 63
         }
       ],
       "outputs": [
@@ -243,7 +256,8 @@
           "type": "BOOLEAN",
           "links": [
             9,
-            22
+            22,
+            64
           ]
         }
       ],
@@ -256,36 +270,48 @@
       "title": "Intro 구간 덮어쓰기 · BOOL"
     },
     {
-      "id": 27,
-      "type": "LoadAudio",
+      "id": 50,
+      "type": "YuE2HumAudioInput",
       "pos": [
         580,
         290
       ],
       "size": [
         460,
-        200
+        210
       ],
       "flags": {},
       "order": 6,
       "mode": 0,
-      "inputs": [],
+      "inputs": [
+        {
+          "name": "file_audio",
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "link": 64
+        }
+      ],
       "outputs": [
         {
           "name": "AUDIO",
           "type": "AUDIO",
           "links": [
-            7
+            65
           ]
         }
       ],
       "properties": {
-        "Node name for S&R": "LoadAudio"
+        "Node name for S&R": "YuE2HumAudioInput"
       },
       "widgets_values": [
+        "file",
         ""
       ],
-      "title": "Intro 오디오 파일"
+      "title": "Intro 오디오 입력"
     },
     {
       "id": 28,
@@ -310,7 +336,7 @@
         {
           "name": "audio",
           "type": "AUDIO",
-          "link": 7
+          "link": 65
         }
       ],
       "outputs": [
@@ -427,7 +453,8 @@
           "type": "BOOLEAN",
           "links": [
             14,
-            25
+            25,
+            66
           ]
         }
       ],
@@ -440,36 +467,48 @@
       "title": "Bridge 구간 덮어쓰기 · BOOL"
     },
     {
-      "id": 32,
-      "type": "LoadAudio",
+      "id": 51,
+      "type": "YuE2HumAudioInput",
       "pos": [
         1620,
         290
       ],
       "size": [
         460,
-        200
+        210
       ],
       "flags": {},
       "order": 10,
       "mode": 0,
-      "inputs": [],
+      "inputs": [
+        {
+          "name": "file_audio",
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "link": 66
+        }
+      ],
       "outputs": [
         {
           "name": "AUDIO",
           "type": "AUDIO",
           "links": [
-            12
+            67
           ]
         }
       ],
       "properties": {
-        "Node name for S&R": "LoadAudio"
+        "Node name for S&R": "YuE2HumAudioInput"
       },
       "widgets_values": [
+        "file",
         ""
       ],
-      "title": "Bridge 오디오 파일"
+      "title": "Bridge 오디오 입력"
     },
     {
       "id": 33,
@@ -494,7 +533,7 @@
         {
           "name": "audio",
           "type": "AUDIO",
-          "link": 12
+          "link": 67
         }
       ],
       "outputs": [
@@ -1988,14 +2027,6 @@
       "AUDIO_ENCODER"
     ],
     [
-      2,
-      1,
-      0,
-      3,
-      1,
-      "AUDIO"
-    ],
-    [
       3,
       3,
       0,
@@ -2028,14 +2059,6 @@
       "AUDIO_ENCODER"
     ],
     [
-      7,
-      27,
-      0,
-      28,
-      1,
-      "AUDIO"
-    ],
-    [
       8,
       28,
       0,
@@ -2066,14 +2089,6 @@
       33,
       0,
       "AUDIO_ENCODER"
-    ],
-    [
-      12,
-      32,
-      0,
-      33,
-      1,
-      "AUDIO"
     ],
     [
       13,
@@ -2466,6 +2481,54 @@
       44,
       0,
       "STRING"
+    ],
+    [
+      62,
+      45,
+      0,
+      49,
+      1,
+      "BOOLEAN"
+    ],
+    [
+      63,
+      49,
+      0,
+      3,
+      1,
+      "AUDIO"
+    ],
+    [
+      64,
+      46,
+      0,
+      50,
+      1,
+      "BOOLEAN"
+    ],
+    [
+      65,
+      50,
+      0,
+      28,
+      1,
+      "AUDIO"
+    ],
+    [
+      66,
+      47,
+      0,
+      51,
+      1,
+      "BOOLEAN"
+    ],
+    [
+      67,
+      51,
+      0,
+      33,
+      1,
+      "AUDIO"
     ]
   ],
   "groups": [
