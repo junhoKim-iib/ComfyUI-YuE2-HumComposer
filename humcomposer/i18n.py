@@ -48,7 +48,7 @@ def prepare_report_language(data: dict) -> dict:
     The saved workflow and the caller's prompt are left untouched.
     """
     node_types = {'YuE2HumMelodyAnalyze', 'YuE2KeyModeCandidates', 'YuE2ChordProgressionRecommend',
-                  'YuE2HumSongComposer', 'YuE2ABCValidate', 'YuE2ABCScoreViewer',
+                  'YuE2HumSongComposer', 'YuE2ABCValidate',
                   'YuE2ABCScoreEditor', 'YuE2HumTranscribe', 'YuE2HumGenerateABC'}
     prompt = data.get('prompt')
     if not isinstance(prompt, dict):

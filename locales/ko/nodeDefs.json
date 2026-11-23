@@ -229,16 +229,6 @@
             }
         }
     },
-    "YuE2ABCScoreViewer": {
-        "display_name": "YuE2 ABC 악보 보기",
-        "description": "ABC를 로컬 SVG 오선 악보로 표시합니다. final_abc 또는 SheetSage2 abc를 연결하세요.",
-        "inputs": {
-            "abc": {
-                "name": "ABC"
-            }
-        },
-        "outputs": {}
-    },
     "YuE2ABCScoreEditor": {
         "display_name": "YuE2 ABC 악보 편집기",
         "description": "오선 악보, ABC, 피아노 롤을 실시간 편집합니다. 현재 편집본을 YuE2 Generate Music으로 출력합니다.",

@@ -1,12 +1,11 @@
-from ..humcomposer.i18n import report_inputs, report_locale, translate
 """Adapt the existing ABC model to the score widget; never rewrite the source."""
 from fractions import Fraction
 import re
 
 from ..humcomposer.abc.model import ChordSymbol, Note, NoteStack, Rest
-from ..humcomposer.abc.parser import ABCParseError, parse_abc
+from ..humcomposer.abc.parser import parse_abc
 from ..humcomposer.abc.validation import validate_score
-from .analyze import CATEGORY
+from ..humcomposer.i18n import translate
 
 
 def _rhythm(duration: Fraction) -> list[tuple[Fraction, int, int]]:
@@ -162,23 +161,3 @@ def _preview(abc: str, locale: str = 'en') -> dict:
                   if c.kind == 'Q' and c.voice_id is None), '')
     return {'title': next((h.value for h in score.headers if h.field == 'T'), 'YuE2 Score'), 'tempo': tempo,
             'source': abc, 'voices': voices, 'aligned': aligned, 'messages': messages, 'messageDetails': message_details}
-
-
-class ABCScoreViewer:
-    CATEGORY = CATEGORY
-    FUNCTION = 'preview'
-    RETURN_TYPES = ()
-    RETURN_NAMES = ()
-    OUTPUT_NODE = True
-    DESCRIPTION = 'Display ABC as a local SVG staff score. Connect final_abc or SheetSage2 abc.'
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        return report_inputs({'required': {'abc': ('STRING', {'forceInput': True})}})
-
-    def preview(self, abc: str, extra_pnginfo=None, unique_id=None, report_language=None) -> dict:
-        try:
-            payload = _preview(abc, report_locale(extra_pnginfo, unique_id, report_language))
-        except (ABCParseError, ValueError) as error:
-            payload = {'error': str(error), 'source': abc}
-        return {'ui': {'score': [payload]}, 'result': ()}

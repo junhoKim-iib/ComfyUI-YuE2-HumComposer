@@ -229,16 +229,6 @@
             }
         }
     },
-    "YuE2ABCScoreViewer": {
-        "display_name": "YuE2 ABC Score Viewer",
-        "description": "Display ABC as a local SVG staff score. Connect final_abc or SheetSage2 abc.",
-        "inputs": {
-            "abc": {
-                "name": "ABC"
-            }
-        },
-        "outputs": {}
-    },
     "YuE2ABCScoreEditor": {
         "display_name": "YuE2 ABC Score Editor",
         "description": "Live staff, ABC and piano-roll editor. Output the current draft to YuE2 Generate Music.",

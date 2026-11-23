@@ -1,10 +1,9 @@
-"""ComfyUI V1 nodes with a local, dependency-free SVG score viewer."""
+"""ComfyUI V1 nodes with a local, dependency-free score editor."""
 from .nodes.analyze import HumMelodyAnalyze, KeyModeCandidates
 from .nodes.harmony import ChordProgressionRecommend
 from .nodes.anchors import CreateMelodyAnchor, AppendMelodyAnchor
 from .nodes.compose import HumSongComposer
 from .nodes.validation import ABCValidate
-from .nodes.score import ABCScoreViewer
 from .nodes.editor import ABCScoreEditor
 from .nodes.transcribe import HumTranscribe
 from .nodes.audio_input import HumAudioInput
@@ -22,7 +21,6 @@ NODE_CLASS_MAPPINGS = {
     'YuE2AppendMelodyAnchor': AppendMelodyAnchor,
     'YuE2HumSongComposer': HumSongComposer,
     'YuE2ABCValidate': ABCValidate,
-    'YuE2ABCScoreViewer': ABCScoreViewer,
     'YuE2ABCScoreEditor': ABCScoreEditor,
     'YuE2HumTranscribe': HumTranscribe,
     'YuE2HumAudioInput': HumAudioInput,
@@ -36,7 +34,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     'YuE2AppendMelodyAnchor': 'YuE2 Append Melody Anchor',
     'YuE2HumSongComposer': 'YuE2 Hum Song Composer',
     'YuE2ABCValidate': 'YuE2 ABC Validate',
-    'YuE2ABCScoreViewer': 'YuE2 ABC Score Viewer',
     'YuE2ABCScoreEditor': 'YuE2 ABC Score Editor',
     'YuE2HumTranscribe': 'YuE2 Hum Transcribe',
     'YuE2HumAudioInput': 'YuE2 Hum Audio Input',

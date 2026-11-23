@@ -1,7 +1,6 @@
 // Version local imports together so older immutable browser caches cannot retain Korean-only modules.
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
-import { createScoreView } from "./score_renderer.mjs?v=20261119-i18n2";
 import { createScoreEditor } from "./score_editor.mjs?v=20261119-i18n2";
 import { getLocale, setLocale, onLocaleChange, t } from "./i18n.mjs?v=20261119-i18n2";
 import { localizeWorkflow } from "./workflow_i18n.mjs?v=20261119-i18n2";
@@ -37,7 +36,7 @@ app.registerExtension({
     beforeRegisterNodeDef(nodeType, nodeData) {
         if (!['YuE2HumMelodyAnalyze', 'YuE2KeyModeCandidates', 'YuE2ChordProgressionRecommend',
               'YuE2MelodyAnchor', 'YuE2AppendMelodyAnchor', 'YuE2HumSongComposer', 'YuE2ABCValidate',
-              'YuE2ABCScoreViewer', 'YuE2ABCScoreEditor', 'YuE2HumTranscribe', 'YuE2HumGenerateABC'].includes(nodeData.name)) return;
+              'YuE2ABCScoreEditor', 'YuE2HumTranscribe', 'YuE2HumGenerateABC'].includes(nodeData.name)) return;
         const onSerialize = nodeType.prototype.onSerialize;
         nodeType.prototype.onSerialize = function (data) {
             const result = onSerialize?.apply(this, arguments);
@@ -56,13 +55,12 @@ app.registerExtension({
             }
             return result;
         };
-        if (!['YuE2ABCScoreViewer', 'YuE2ABCScoreEditor'].includes(nodeData.name)) return;
+        if (nodeData.name !== 'YuE2ABCScoreEditor') return;
         const onCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = function () {
             const result = onCreated?.apply(this, arguments);
-            const editor = nodeData.name === 'YuE2ABCScoreEditor';
-            const abc = editor && this.widgets.find((widget) => widget.name === 'abc');
-            const follow = editor && this.widgets.find((widget) => widget.name === 'follow_input');
+            const abc = this.widgets.find((widget) => widget.name === 'abc');
+            const follow = this.widgets.find((widget) => widget.name === 'follow_input');
             const changed = () => { this.graph?.change(); this.setDirtyCanvas(true); };
             const updateLabels = () => {
                 if (follow) {
@@ -73,16 +71,14 @@ app.registerExtension({
             };
             updateLabels();
             const unsubscribeLocale = onLocaleChange(updateLabels);
-            if (editor) {
-                abc.type = 'hidden'; abc.computeSize = () => [0, -4];
-                if (abc.element) abc.element.style.display = 'none';
-            }
+            abc.type = 'hidden'; abc.computeSize = () => [0, -4];
+            if (abc.element) abc.element.style.display = 'none';
             const callbacks = {
                 followInput: () => follow.value,
                 setFollowInput: (value) => { follow.value = value; changed(); },
                 onChange: (text) => { abc.value = text; changed(); },
             };
-            let view = editor ? createScoreEditor({
+            let view = createScoreEditor({
                 initialAbc: abc.value,
                 ...callbacks,
                 request: async (data, signal) => {
@@ -93,30 +89,26 @@ app.registerExtension({
                     if (!response.ok || payload.error) throw new Error(payload.error ?? `HTTP ${response.status}`);
                     return payload;
                 },
-            }) : createScoreView();
+            });
             views.set(this, view);
             const host = document.createElement('div');
             host.style.cssText = 'width:100%;height:100%';
-            const mountView = () => {
-                if (view.attach) view.attach(host);
-                else host.append(view.element);
-            };
-            mountView();
+            view.attach(host);
             this.addDOMWidget("score", "score", host, {
                 serialize: false,
                 hideOnZoom: false,
                 // This widget owns one DOM element; do not mount it again in the inspector.
                 hideInPanel: true,
-                getMinHeight: () => editor ? 700 : 440,
+                getMinHeight: () => 700,
             });
-            this.setSize([Math.max(this.size[0], editor ? 1040 : 820), Math.max(this.size[1], editor ? 850 : 560)]);
+            this.setSize([Math.max(this.size[0], 1040), Math.max(this.size[1], 850)]);
             const onConfigure = this.onConfigure;
             this.onConfigure = function (data) {
                 onConfigure?.apply(this, arguments);
                 const token = data?.properties?.humcomposer_view_session;
                 const entry = retainedViews.get(token);
                 if (this.properties) delete this.properties.humcomposer_view_session;
-                const sameDraft = !editor || entry?.view.getDraft?.() === abc.value;
+                const sameDraft = entry?.view.getDraft() === abc.value;
                 if (entry && sameDraft && entry.id === data.id && entry.type === data.type && (entry.detached || entry.view === view)) {
                     localeTransitionUntil = 0;
                     clearTimeout(entry.timer);
@@ -124,20 +116,20 @@ app.registerExtension({
                     viewTokens.delete(entry.view);
                     if (view !== entry.view) view.destroy();
                     view = entry.view;
-                    if (editor) view.rebind(callbacks);
-                    mountView();
+                    view.rebind(callbacks);
+                    view.attach(host);
                     views.set(this, view);
                 } else {
                     if (entry?.detached) releaseRetainedView(token);
-                    if (editor) view.loadDraft(abc.value);
+                    view.loadDraft(abc.value);
                 }
             };
-            if (editor) view.loadDraft(abc.value);
+            view.loadDraft(abc.value);
 
             const onExecuted = this.onExecuted;
             this.onExecuted = function (message) {
                 onExecuted?.apply(this, arguments);
-                view.update((editor ? message.editor : message.score) ?? []);
+                view.update(message.editor ?? []);
             };
             const onRemoved = this.onRemoved;
             this.onRemoved = function () {
@@ -158,7 +150,7 @@ app.registerExtension({
     onNodeOutputsUpdated(outputs) {
         for (const [id, output] of Object.entries(outputs)) {
             const node = app.graph?.getNodeById(id);
-            if (node && (output.editor || output.score)) views.get(node)?.update(output.editor ?? output.score, { preserveState: true });
+            if (node && output.editor) views.get(node)?.update(output.editor);
         }
     },
 });
