@@ -124,3 +124,7 @@ Find all HumComposer nodes under `audio/YuE2/Hum Composer`.
 - **Transcription can contain errors.** SheetSage2 can misidentify pitches, rhythms, chords, and instruments. Review the ABC before composing. The extension can retry a specific transcription-grid error.
 - **ABC structure matters.** Section names, meter and bar lengths, ties, voice layout, and token budget can affect composition. The workflow reports an error when it cannot meet an enabled melody requirement.
 - **Audio generation requires ComfyUI's native YuE2 pipeline.**
+
+## License
+
+HumComposer is licensed under the [GNU General Public License, version 3](LICENSE) (`GPL-3.0-only`).
