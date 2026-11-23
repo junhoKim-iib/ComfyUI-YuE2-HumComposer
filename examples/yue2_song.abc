@@ -1,0 +1,37 @@
+X:1
+T:HumComposer authored regression
+M:4/4
+L:1/8
+Q:1/4=104
+V: Vocal clef=treble name="Vocal Melody" snm="Vocal"
+V: Ins clef=treble name="Ins Melody" snm="Inst."
+K:C
+% intro
+V: Vocal
+"C"z8|
+V: Ins
+E2G2A2G2|
+% verse
+V: Vocal
+"Am"A2c2B2A2|
+V: Ins
+Z|
+% chorus
+V: Vocal
+"F"A2G2F2A2|
+V: Ins
+Z|
+V: Vocal
+"C"G2E2D2C2|
+V: Ins
+Z|
+% bridge
+V: Vocal
+"Dm"F2A2G2F2|
+V: Ins
+D2F2E2D2|
+% chorus
+V: Vocal
+"G"B2A2G2B2|"C"e2d2G2C2|
+V: Ins
+Z2|
