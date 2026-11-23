@@ -898,7 +898,7 @@
         "Node name for S&R": "YuE2AppendMelodyAnchor"
       },
       "widgets_values": [],
-      "title": "1. Intro 앵커"
+      "title": "1. Intro 멜로디"
     },
     {
       "id": 35,
@@ -1088,7 +1088,7 @@
         "Node name for S&R": "YuE2AppendMelodyAnchor"
       },
       "widgets_values": [],
-      "title": "3. 선택 앵커 → 병합"
+      "title": "3. 선택한 구간 멜로디 모으기"
     },
     {
       "id": 7,
@@ -2581,7 +2581,7 @@
       "flags": {}
     },
     {
-      "title": "05 선택 구간 앵커 · Intro / Bridge",
+      "title": "05 구간별 멜로디 · Intro / Bridge",
       "bounding": [
         2160,
         60,

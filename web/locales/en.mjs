@@ -149,11 +149,11 @@ export default {
     "workflow.node.keyReport": "Key and mode candidate report",
     "workflow.node.chordReport": "Chord progression candidates for the selected key",
     "workflow.node.introAnchor": "Intro · LOCK · instrumental melody",
-    "workflow.node.appendIntro": "1. Intro anchor",
+    "workflow.node.appendIntro": "1. Intro melody",
     "workflow.node.bridgeAnchor": "Bridge · LOCK + REHARMONIZE",
     "workflow.node.appendBridge": "2. Add Bridge",
     "workflow.node.verseAnchor": "Verse · AI · disabled by default / retain original",
-    "workflow.node.appendVerse": "3. Selected anchors → merge",
+    "workflow.node.appendVerse": "3. Combine selected section melodies",
     "workflow.node.style": "Song style and structure",
     "workflow.node.lyrics": "Complete lyrics (two choruses)",
     "workflow.node.styleWithChords": "Style + selected key and chord instructions",
@@ -175,11 +175,11 @@ export default {
     "workflow.group.audio": "02 Optional audio · BOOL false = retain AI original",
     "workflow.group.harmony": "03 Main-theme key, mode and chord progression",
     "workflow.group.generate": "04 Generate and check full-song ABC with selected sections",
-    "workflow.group.anchors": "05 Section anchors · Intro / Bridge",
+    "workflow.group.anchors": "05 Section melodies · Intro / Bridge",
     "workflow.group.compose": "06 Develop main theme, merge sections and validate",
     "workflow.group.music": "07 Final ABC → YuE2 generation → sampling → audio",
     "workflow.group.editor": "08 Live score editing · piano",
     "workflow.node.introAudioOptional": "Intro audio file (optional)",
     "workflow.node.bridgeAudioOptional": "Bridge audio file (optional)",
-    "workflow.group.optionalAnchors": "05 Optional section anchors · Intro / Bridge"
+    "workflow.group.optionalAnchors": "05 Optional section melodies · Intro / Bridge"
 };

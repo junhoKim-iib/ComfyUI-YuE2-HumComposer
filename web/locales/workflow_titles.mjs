@@ -183,3 +183,10 @@ export const groupTitles = [
     "workflow.group.editor",
     "workflow.group.optionalAnchors"
 ];
+
+export const previousWorkflowTitles = {
+    "workflow.node.appendIntro": ["1. Intro anchor", "1. Intro 앵커"],
+    "workflow.node.appendVerse": ["3. Selected anchors → merge", "3. 선택 앵커 → 병합"],
+    "workflow.group.anchors": ["05 Section anchors · Intro / Bridge", "05 선택 구간 앵커 · Intro / Bridge"],
+    "workflow.group.optionalAnchors": ["05 Optional section anchors · Intro / Bridge", "05 선택 구간 앵커 · Intro / Bridge (선택사항)"]
+};

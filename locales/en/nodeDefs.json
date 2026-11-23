@@ -101,8 +101,8 @@
         }
     },
     "YuE2MelodyAnchor": {
-        "display_name": "YuE2 Melody Anchor",
-        "description": "Place a melody in a section with explicit fit, transposition and harmony policies.",
+        "display_name": "YuE2 Set Section Melody",
+        "description": "Choose a melody to use in a song section. Set which occurrence and voice it applies to.",
         "inputs": {
             "abc": {
                 "name": "ABC"
@@ -141,40 +141,40 @@
                 "name": "Seed"
             },
             "source": {
-                "name": "Fallback anchor ID",
-                "tooltip": "Fallback preceding anchor ID, e.g. chorus#1. Used only when abc is empty; supplied ABC takes priority."
+                "name": "Reuse melody from section",
+                "tooltip": "Enter a section set earlier, such as chorus#1. This setting applies when the ABC input is empty."
             },
             "enabled": {
                 "name": "Enabled",
-                "tooltip": "Disabled anchors do not require ABC and leave the base plan unchanged."
+                "tooltip": "When off, this setting leaves the base score as it is and the ABC input can be left empty."
             }
         },
         "outputs": {
             "0": {
-                "name": "Melody anchor"
+                "name": "Section melody"
             }
         }
     },
     "YuE2AppendMelodyAnchor": {
-        "display_name": "YuE2 Append Melody Anchor",
-        "description": "Append an enabled melody anchor to the existing collection.",
+        "display_name": "YuE2 Collect Section Melodies",
+        "description": "Add a section melody to the list of melodies to apply to the song.",
         "inputs": {
             "anchor": {
-                "name": "Melody anchor"
+                "name": "Section melody"
             },
             "previous": {
-                "name": "Previous anchors"
+                "name": "Existing section melodies"
             }
         },
         "outputs": {
             "0": {
-                "name": "Melody anchors"
+                "name": "Section melodies"
             }
         }
     },
     "YuE2HumSongComposer": {
         "display_name": "YuE2 Hum Song Composer",
-        "description": "Merge melody anchors and the main theme into a generated ABC song.",
+        "description": "Apply section melodies and the main theme to a generated ABC score.",
         "inputs": {
             "base_abc": {
                 "name": "Base ABC"
@@ -190,7 +190,7 @@
                 "name": "Validation strictness"
             },
             "anchors": {
-                "name": "Melody anchors"
+                "name": "Section melodies"
             },
             "main_theme": {
                 "name": "Main theme",
@@ -318,7 +318,7 @@
                 "tooltip": "Retry incompatible plans with consecutive seeds. Never silently drop an enabled audio section."
             },
             "anchors": {
-                "name": "Melody anchors"
+                "name": "Section melodies"
             },
             "main_theme": {
                 "name": "Main theme"

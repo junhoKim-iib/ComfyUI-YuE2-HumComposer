@@ -149,11 +149,11 @@ export default {
     "workflow.node.keyReport": "조·모드 후보 보고서",
     "workflow.node.chordReport": "선택한 조의 코드 진행 후보",
     "workflow.node.introAnchor": "Intro · LOCK · 악기 멜로디",
-    "workflow.node.appendIntro": "1. Intro 앵커",
+    "workflow.node.appendIntro": "1. Intro 멜로디",
     "workflow.node.bridgeAnchor": "Bridge · LOCK + REHARMONIZE",
     "workflow.node.appendBridge": "2. Bridge 추가",
     "workflow.node.verseAnchor": "Verse · AI · 기본 비활성 / 원본 유지",
-    "workflow.node.appendVerse": "3. 선택 앵커 → 병합",
+    "workflow.node.appendVerse": "3. 선택한 구간 멜로디 모으기",
     "workflow.node.style": "곡 스타일·구조",
     "workflow.node.lyrics": "전체 가사 (Chorus 2회)",
     "workflow.node.styleWithChords": "스타일 + 선택한 조·코드 지침",
@@ -175,11 +175,11 @@ export default {
     "workflow.group.audio": "02 오디오 선택사항 · BOOL false = AI 원본 유지",
     "workflow.group.harmony": "03 메인 주제의 조·모드 후보와 코드 진행 선택",
     "workflow.group.generate": "04 선택 구간을 포함한 전체 곡 ABC 생성·검사",
-    "workflow.group.anchors": "05 선택 구간 앵커 · Intro / Bridge",
+    "workflow.group.anchors": "05 구간별 멜로디 · Intro / Bridge",
     "workflow.group.compose": "06 메인 주제 전개·선택 구간 병합·검증",
     "workflow.group.music": "07 최종 ABC → YuE2 생성 → 샘플링 → 오디오",
     "workflow.group.editor": "08 실시간 악보 편집 · 피아노",
     "workflow.node.introAudioOptional": "Intro 오디오 파일 (선택사항)",
     "workflow.node.bridgeAudioOptional": "Bridge 오디오 파일 (선택사항)",
-    "workflow.group.optionalAnchors": "05 선택 구간 앵커 · Intro / Bridge (선택사항)"
+    "workflow.group.optionalAnchors": "05 구간별 멜로디 · Intro / Bridge (선택사항)"
 };
